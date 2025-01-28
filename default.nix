@@ -4,5 +4,5 @@ stdenv.mkDerivation {
   name = "blueprint";
   src = ./.;
   buildInputs = [ lz4 protobuf ];
-  nativeBuildInputs = [ pkg-config ];
+  nativeBuildInputs = [ pkg-config protobuf ];
 }

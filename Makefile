@@ -1,4 +1,4 @@
-LIBS := `pkg-config --libs protobuf`
+LIBS := `$(PKG_CONFIG) --libs protobuf`
 
 blueprint-unpacker: blueprint-unpacker.o trailmakers.pb.o
 	$(CXX) -o $@ $^ -llz4 $(LIBS) -g

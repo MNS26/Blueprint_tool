@@ -13,7 +13,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <google/protobuf-c/protobuf-c.h>
 #include <google/protobuf/util/time_util.h>
 #include <google/protobuf/util/json_util.h>
 #include "trailmakers.pb.h"

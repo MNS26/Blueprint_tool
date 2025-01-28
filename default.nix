@@ -1,7 +1,8 @@
-{ stdenv, protobufc, protobuf, abseil-cpp, pkg-config, lz4}:
+{ stdenv, protobuf, abseil-cpp, pkg-config, lz4, lib }:
 
 stdenv.mkDerivation {
   name = "blueprint";
   src = ./.;
-  buildInputs = [ protobufc protobuf abseil-cpp pkg-config lz4 ];
+  buildInputs = [ lz4 protobuf ];
+  nativeBuildInputs = [ pkg-config ];
 }

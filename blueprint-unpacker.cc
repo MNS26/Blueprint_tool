@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #include <lz4.h>
 #include <lz4frame.h>
@@ -270,7 +271,7 @@ int main(int argc, char *argv[]) {
   string out_path;
   string out_type;
 
-  while ((opt = getopt(argc, argv, "p:j:o:O:i:I:")) != -1) {
+  while ((opt = getopt(argc, argv, "p:j:o:O:i:I:hH")) != -1) {
     switch (opt) {
     case 'p':
       in_path = optarg;
@@ -292,7 +293,16 @@ int main(int argc, char *argv[]) {
     case 'I':
       in_type = optarg;
       break;
+    case 'H':
+    case 'h':
+      print_help();
+      return EXIT_SUCCESS;
     }
+  }
+
+  if (in_path.empty() || out_path.empty()) {
+    print_help();
+    return EXIT_SUCCESS;
   }
 
 /*

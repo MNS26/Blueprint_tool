@@ -1,7 +1,11 @@
+PKG_CONFIG ?= pkg-config
 LIBS := `$(PKG_CONFIG) --libs protobuf`
 
 blueprint-unpacker: blueprint-unpacker.o trailmakers.pb.o
 	$(CXX) -o $@ $^ -llz4 $(LIBS) -g
+
+run: blueprint-unpacker
+	./blueprint-unpacker -p Blueprint_202106251826128194.png -j out.json
 
 %.o: %.cc
 	$(CXX) -c -o $@ $< -g -Wall

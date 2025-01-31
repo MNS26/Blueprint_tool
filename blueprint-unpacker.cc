@@ -22,24 +22,6 @@ using namespace std;
 //using namespace google::protobuf;
 //using google::protobuf::util::TimeUtil;
 StructureGraphSaveDataProto sgsdp;
-typedef struct __attribute__((packed)) {
-    const char stuff[99];
-    const char SaveGamePNG_STR[22];
-    const char Version_STR[8];
-    const char Creator_STR[8];
-    const char StructureByteSize_STR[18];
-    const char StructureIdentifierSize_STR[24];
-    const char StructureMetaByteSize[21];
-    const uint8_t Constant[23];
-    const uint8_t filler[12];
-} Header;
-
-typedef struct __attribute__((packed)) {
-    uint32_t LZ4_size;
-    uint32_t UUID_length;
-    uint32_t SMAZ_chunk_length;
-    uint8_t filler[2];
-} VehicleDecodeData;
 
 int64_t decompress_data_internal(uint8_t* srcBuffer,size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize,size_t filled, size_t alreadyConsumed, LZ4F_dctx* dctx) {
     int firstChunk = 1;
@@ -174,44 +156,72 @@ size_t decompress_protobuf(std::vector<uint8_t> protobuf, string *json_buffer) {
     return message.size();;
 
 }
-
+#ifndef __WIN32
 void print_banner() {
-    fprintf(stderr, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
-    fprintf(stderr, "║╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━╮╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱┃╭━╮┃┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ┃╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱┃╰━╯╰┫ ┃╭━╮ ╭━┳━━━┳━━━┳━━━┳━┳━━━━╋╮ ╭╯╱╱╱┃ ┃╱╱┃ ┣━━━━━╮━━━┳━━━━━┳━━━┫ ┃ ╭┳━━━┳━━╮╱╱║\n");
-    fprintf(stderr, "║╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃┃━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┫ ┃╱╱╱╱┃ ┃╱╱┃ ┃ ╭━╮ ┫╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┫┃━━┫ ╭╯╱╱║\n");
-    fprintf(stderr, "║╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃┃━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ╰━━╯ ┃ ┃ ┃ ┃╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┫┃━━┫ ┃╱╱╱║\n");
-    fprintf(stderr, "║╱╱╰━━━━┻━━┻━━━━━┻━━━┫ ╭━┻━╯ ╰━┻━╯ ╰━┻━━╯╱╱╱╰━━━━━━┻━╯ ╰━┫ ╭━┻━╯ ╰━┻━━━┻━╯ ╰┻━━━┻━╯╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱Made by: Noah (MS26)╱╱╱║\n");
-    fprintf(stderr, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
+    fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
+    fprintf(stdout, "║╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━╮╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stdout, "║╱╱┃╭━╮┃┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ┃╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stdout, "║╱╱┃╰━╯╰┫ ┃╭━╮ ╭━┳━━━┳━━━┳━━━┳━┳━━━━╋╮ ╭╯╱╱╱┃ ┃╱╱┃ ┣━━━━━╮━━━┳━━━━━┳━━━┫ ┃ ╭┳━━━┳━━╮╱╱║\n");
+    fprintf(stdout, "║╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃┃━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┫ ┃╱╱╱╱┃ ┃╱╱┃ ┃ ╭━╮ ┫╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┫┃━━┫ ╭╯╱╱║\n");
+    fprintf(stdout, "║╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃┃━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ╰━━╯ ┃ ┃ ┃ ┃╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┫┃━━┫ ┃╱╱╱║\n");
+    fprintf(stdout, "║╱╱╰━━━━┻━━┻━━━━━┻━━━┫ ╭━┻━╯ ╰━┻━╯ ╰━┻━━╯╱╱╱╰━━━━━━┻━╯ ╰━┫ ╭━┻━╯ ╰━┻━━━┻━╯ ╰┻━━━┻━╯╱╱╱║\n");
+    fprintf(stdout, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stdout, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱Made by: Noah (MS26)╱╱╱║\n");
+    fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 
 }
 void print_help() {
-    fprintf(stderr, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
-    fprintf(stderr, "║ This tool takes blueprint data and converts it to the following types:              ║\n");
-    fprintf(stderr, "║ Raw binary (direct rip from the PNG)                                                ║\n");
-    fprintf(stderr, "║ lz4 commpressed + user data text (compressed vehicle data and user data)            ║\n");
-    fprintf(stderr, "║ protobuffer + user data text (raw vehicle structure data and user data)             ║\n");
-    fprintf(stderr, "║ JSON + user data text (parsed vehicle structure data and user data)                 ║\n");
-    fprintf(stderr, "╠═════════════════════════════════════════════════════════════════════════════════════╣\n");
-    fprintf(stderr, "║ The following combinations can be used                                              ║\n");
-    fprintf(stderr, "║ Usage:               <input_png> <output_pro>   (output png to protobuf) (default)  ║\n");
-    fprintf(stderr, "║ Usage: -H to show this help screen                                                  ║\n");
-    fprintf(stderr, "║ Usage: -I png -O bin <input_png> <output_bin>   (output png to bin)            (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I png -O lz4 <input_png> <output_lz4>   (output png to lz4)            (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I png -O pro <input_png> <output_proto> (output png to protobuf)            ║\n");
-    fprintf(stderr, "║ Usage: -I png -O jso <input_png> <output_json>  (output png to Json)           (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I bin -O lz4 <input_bin> <output_lz4>   (output bin to lz4)            (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I bin -O pro <input_bin> <output_proto> (output bin to protobuf)       (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I bin -O jso <input_bin> <output_json>  (output bin to json)           (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I lz4 -O pro <input_lz4> <output_proto> (output lz4 to protobuf)       (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I lz4 -O jso <input_lz4> <output_json>  (output lz4 to json)           (TBD)║\n");
-    fprintf(stderr, "║ Usage: -I pro -O jso <input_proto> <output_json> (output lz4 to json)          (TBD)║\n");
-    fprintf(stderr, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
+    fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
+    fprintf(stdout, "║ This tool takes \"blueprint\" data and converts it to the following types:            ║\n");
+    fprintf(stdout, "║ Raw binary                         (direct rip from the image)                      ║\n");
+    fprintf(stdout, "║ lz4 commpressed + user data        (compressed vehicle data and user data)          ║\n");
+    fprintf(stdout, "║ protobuffer + user data            (raw vehicle structure data and user data)       ║\n");
+    fprintf(stdout, "║ JSON + user data                   (parsed vehicle structure data and user data)    ║\n");
+    fprintf(stdout, "╠═════════════════════════════════════════════════════════════════════════════════════╣\n");
+    fprintf(stdout, "║ The following options are available                                                 ║\n");
+    fprintf(stdout, "║ -H/-h                              shows this help screen                           ║\n");
+    fprintf(stdout, "║ -p <path>                          path to png input file                           ║\n");
+    fprintf(stdout, "║ -i <path>                          path to input file                               ║\n");
+    fprintf(stdout, "║ -I [png, binary, lz4. protobuf]    input file type                                  ║\n");
+    fprintf(stdout, "║ -o <path>                          path to outpout file                             ║\n");
+    fprintf(stdout, "║ -O [binary, lz4, protobuf, json]   Output file type                                 ║\n");
+    fprintf(stdout, "║ -j <path>                          path to outpout Json file                        ║\n");
+    fprintf(stdout, "║ -b <path>                          path to outpout Binary file                      ║\n");
+    fprintf(stdout, "║ -l <path lz4>                      path to output lz4 file                          ║\n");
+    fprintf(stdout, "║ -P <path protobuf>                 path to output protobuf file                     ║\n");
+    fprintf(stdout, "║ -j <path json>                     path to output json file                         ║\n");
+    fprintf(stdout, "║ -U                                 dump UUID to text file                           ║\n");
+    fprintf(stdout, "║ -D                                 dump Description to text file                    ║\n");
+    fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
+#else
+void print_banner() {
+    fprintf(stdout, "Blueprint Unpacker \n");
+    fprintf(stdout, "Made by: Noah (MS26) \n");
+    fprintf(stdout, "\n");
+}
+void print_help() {
 
+    fprintf(stdout, "This tool takes \"blueprint\" images and converts it to the following types:\n");
+    fprintf(stdout, "Raw binary                         (direct rip from the image)\n");
+    fprintf(stdout, "lz4 commpressed + user data        (compressed vehicle data and user data)\n");
+    fprintf(stdout, "protobuffer     + user data        (raw vehicle structure data and user data)\n");
+    fprintf(stdout, "JSON            + user data        (parsed vehicle structure data and user data)\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "-H/-h                            shows this help screen\n");
+    fprintf(stdout, "-p <path>                        path to png input file\n");
+    fprintf(stdout, "-i <path>                        path to input file\n");
+    fprintf(stdout, "-I [png, binary, lz4. protobuf]  input file type\n");
+    fprintf(stdout, "-o <path>                        path to outpout file\n");
+    fprintf(stdout, "-O [binary, lz4, protobuf, json] Output file type\n");
+    fprintf(stdout, "-b <path>                        path to outpout Binary file\n");
+    fprintf(stdout, "-l <path lz4>                    path to output lz4 file\n");
+    fprintf(stdout, "-P <path protobuf>               path to output protobuf file\n");
+    fprintf(stdout, "-j <path json>                   path to output json file\n");
+    fprintf(stdout, "-U                               dump UUID to text file\n");
+    fprintf(stdout, "-D                               dump Description to text file\n");
+  }
+#endif
 void writeFile(string path, string contents) {
   FILE *fp = fopen(path.c_str(), "wb");
   if (!fp) {
@@ -270,17 +280,32 @@ int main(int argc, char *argv[]) {
 
   string out_path;
   string out_type;
+  bool dump_UUID = false;
+  bool dump_SMAZ = false;
 
-  while ((opt = getopt(argc, argv, "p:j:o:O:i:I:hH")) != -1) {
+  while ((opt = getopt(argc, argv, "p:j:o:O:i:I:b:hH")) != -1) {
     switch (opt) {
     case 'p':
       in_path = optarg;
       in_type = "png";
       break;
+    case 'b':
+      out_path = optarg;
+      out_type = "binary";
+      break;
+    case 'l':
+      out_path = optarg;
+      out_type = "lz4";
+      break;
     case 'j':
       out_path = optarg;
       out_type = "json";
       break;
+    case 'P':
+      out_path = optarg;
+      out_type = "protobuf";
+      break;
+      
     case 'o':
       out_path = optarg;
       break;
@@ -293,6 +318,12 @@ int main(int argc, char *argv[]) {
     case 'I':
       in_type = optarg;
       break;
+    case 'U':
+      dump_UUID = true;
+      break;
+    case 'D':
+      dump_SMAZ = true;
+      break;
     case 'H':
     case 'h':
       print_help();
@@ -304,34 +335,26 @@ int main(int argc, char *argv[]) {
     print_help();
     return EXIT_SUCCESS;
   }
-
-/*
-    if (argc <3 || (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-H") == 0)) {
-        print_help();
-        return EXIT_FAILURE;
-    }
-
-    const char *in = argv[1];
-    const char *mode_in = argv[2];
-    const char *out = argv[3];
-    const char *mode_out = argv[4];
-    const char *input_file = argv[5];
-    const char *output_file = argv[6];
-*/
-
     // different options
+
+    uint8_t offset_header = 98;
+    uint8_t CreatorNameSize = 0;
+    uint32_t SaveGameVersion = 0;
+    bool leagacy_file = false;
+    uint32_t legacy_protobuf_size = 0;
+    uint32_t lz4_size = 0;
+    uint32_t uuid_size = 0;
+    uint32_t smaz_size = 0;
+    std::vector<char> CreatorName;
+
 
     bool UUID_out = false; // are only if we have a bin or png in
     bool SMAZ_out = false; // are only if we have a bin or png in
 
     std::vector<uint8_t> binary_data; // raw image pixels
     std::vector<uint8_t> lz4_data; // raw lz4 compressed data
-
     std::vector<uint8_t> protobuf_data;
 
-    Header* header = NULL;
-    VehicleDecodeData* vehicle_decode_data = NULL;
-    //uint8_t* Vehicle_Data = NULL;
     uint8_t* UUID = NULL;
     uint8_t* SMAZChunk = NULL;
 
@@ -367,52 +390,89 @@ int main(int argc, char *argv[]) {
 
     // those are only possible if we get the raw bin file or the entire PNG
     if (has_header) {
-        // Overlay fixed header
-        // This is just a struct to make sure we offset far enough into the buffer (this data is not needed)
-        header = (Header*)binary_data.data();
 
-        // Overlay data needed to get extraction values
-        // This lines up with the needed UUID length, LZ4 size, and the SMAZ size (WHAT  THE  FUCK  WERE  THEY  ON  FOR  USING  SMAZ!?)
-        vehicle_decode_data = (VehicleDecodeData*)(binary_data.data() + sizeof(Header));
-        printf("LZ4 size %d\n", vehicle_decode_data->LZ4_size);
+        offset_header += binary_data[offset_header]+1;         // SaveGamePNG size + own byte (17+1)
+        SaveGameVersion = (uint32_t)binary_data[offset_header];// get PNG Save version (>4 means we have lz4 )
+        offset_header += sizeof(SaveGameVersion);              // Move forward 4 bytes (Version num)
+        offset_header += binary_data[offset_header]+1;         // (version string + own byte)
+        offset_header += binary_data[offset_header]+1;         // (creator string + own byte)
+        offset_header += binary_data[offset_header]+1;         // (structuresize string + own byte)
+        if( SaveGameVersion > 4) {
+        offset_header += binary_data[offset_header]+1;         // (ident string + own byte)
+        offset_header += binary_data[offset_header]+1;         // (metasize string + own byte)
+        offset_header += 22;                                   // skip 22 bytes of unknown data
+        } else {
+          offset_header += 18;                                 // skip 18 bytes of unknown data
+          leagacy_file = true;                                 // Only true if we have a raw protobuf instead
+        }
+        CreatorNameSize = binary_data[offset_header];          // (Creator name string size)
+        CreatorName.reserve(CreatorNameSize);
+        offset_header++;
+        CreatorName.assign(binary_data.begin() + offset_header, binary_data.begin() + offset_header + CreatorNameSize);
+        offset_header += CreatorNameSize;
+        if (!leagacy_file) {
+          lz4_size = *(uint32_t*)(binary_data.data()+offset_header); // get LZ4 size
+          offset_header += sizeof(lz4_size);
+          uuid_size = *(uint32_t*)(binary_data.data()+offset_header); // get uuid size
+          offset_header += sizeof(uuid_size);
+          smaz_size = *(uint32_t*)(binary_data.data()+offset_header); // get smaz size
+          offset_header += sizeof(smaz_size);
+          offset_header += 2; // jump 2 forward 
+                  
+          printf("LZ4 size %d\n", lz4_size);
+          printf("UUID size %d\n", uuid_size);
+          printf("SMAZ size %d\n", smaz_size);
 
-        // Pointer to the player UUID
-        UUID = binary_data.data() + sizeof(Header) + sizeof(VehicleDecodeData) + vehicle_decode_data->LZ4_size;
+          // Pointer to the player UUID
+          UUID = binary_data.data() + offset_header + lz4_size;
 
-        // Pointer to vehicle SMAZ description
-        SMAZChunk = binary_data.data() + sizeof(Header) + sizeof(VehicleDecodeData) + vehicle_decode_data->LZ4_size + vehicle_decode_data->UUID_length;
+          // Pointer to vehicle SMAZ description
+          SMAZChunk = binary_data.data() + offset_header + lz4_size + uuid_size;
 
-        auto start = binary_data.begin() + sizeof(Header) + sizeof(VehicleDecodeData);
-        auto end = start + vehicle_decode_data->LZ4_size;
-        lz4_data = std::vector<uint8_t>(start, end);
+          auto start = binary_data.begin() + offset_header;
+
+          auto end = start + lz4_size;
+          lz4_data = std::vector<uint8_t>(start, end);
+
+        } else {
+          legacy_protobuf_size = *(uint32_t*)(binary_data.data()+offset_header); // get legacy protobuf size
+          offset_header += sizeof(legacy_protobuf_size); // shift over by 4
+          offset_header += 3; // shift over by 3 (this lines up with protobuf @0xc0)
+
+        }
+
+    }
+
+    if (leagacy_file) {
+      fprintf(stdout,"Legacy Blueprint detected!\n");
+      fprintf(stdout,"This file has no description or UUID\n");
+      fprintf(stdout,"Available outputs are: Binary, Protobuf, Json\n");
+      if (out_type == "lz4") {
+        fprintf(stdout,"Unable to output: %s. Using default: Json.\n", out_type.c_str());
+        out_type = "json";
+        auto last_point = out_path.find_last_of(".");
+        out_path.replace(last_point+1,last_point+5,out_type); // replacing extention with out_type
+      }
     }
 
     if (in_type == "lz4") {
-        lz4_data = readFile(in_path);
-        if (lz4_data.empty()) return EXIT_FAILURE;
+      lz4_data = readFile(in_path);
+      if (lz4_data.empty()) return EXIT_FAILURE;
     }
 
     if (out_type == "lz4") {
       writeFile(out_path, lz4_data);
     }
 
-    //###################
-    //# POINTER FUCKERY #
-    //#   INCOMMING!!   #
-    //###################
-
-    // Pointer to the LZ4 vehicle data
-    // if we have either of them we can use the header as offset otherwise its 0
-
-    //###########################
-    //# LZ4 DECOMPRESSION HELL #
-    //#     AAAAHHHHHHH!!!     #
-    //##########################
-
-    if (!lz4_data.empty()) {
+    if (!lz4_data.empty() && !leagacy_file) {
       protobuf_data.resize(MAX_LZ4_DECOMPRESSED_SIZXE);
       auto protobuf_size = decompress_data(lz4_data.data(), lz4_data.size(), protobuf_data.data(), protobuf_data.size());
       protobuf_data.resize(protobuf_size);
+    }
+
+    if (leagacy_file) {
+      protobuf_data.resize(legacy_protobuf_size);
+      protobuf_data.assign(binary_data.begin()+offset_header, binary_data.begin()+offset_header+legacy_protobuf_size);
     }
 
     if (in_type == "protobuf") {
@@ -423,10 +483,9 @@ int main(int argc, char *argv[]) {
       writeFile(out_path, protobuf_data);
     }
 
-    string json_data;
-    decompress_protobuf(protobuf_data, &json_data);
-
     if (out_type == "json") {
+      string json_data;
+      decompress_protobuf(protobuf_data, &json_data);
       writeFile(out_path, json_data);
     }
 

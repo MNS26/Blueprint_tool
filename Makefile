@@ -4,8 +4,16 @@ LIBS := `$(PKG_CONFIG) --libs protobuf`
 blueprint-unpacker: blueprint-unpacker.o trailmakers.pb.o
 	$(CXX) -o $@ $^ -llz4 $(LIBS) -g
 
+blueprint-repacker: blueprint-repacker.o trailmakers.pb.o
+	$(CXX) -o $@ $^ -llz4 $(LIBS) -g
+
+smaz: smaz.c
+	$(CXX) -o $@ $^ 
+
 run: blueprint-unpacker
 	./blueprint-unpacker -p Blueprint_202106251826128194.png -j out.json
+run-legacy:
+	./blueprint-unpacker -p /home/noah/Documents/TrailMakers/Blueprints/Blueprint_202009222043333752.png -j out.json
 
 %.o: %.cc
 	$(CXX) -c -o $@ $< -g -Wall
@@ -14,17 +22,11 @@ run: blueprint-unpacker
 
 blueprint-unpacker.o: blueprint-unpacker.cc trailmakers.pb.h
 
+blueprint-repacker.o: blueprint-repacker.cc trailmakers.pb.h
+
 trailmakers.pb.cc trailmakers.pb.h: trailmakers.proto
 	protoc trailmakers.proto --cpp_out=.
 
 install: blueprint-unpacker
 	mkdir -pv $(out)/bin
 	cp $^ $(out)/bin
-
-#blueprint-unpacker: blueprint-unpacker.cc stb/stb_image.h stb/stb_image_write.h lz4/lz4.h  lz4/lz4frame.h lz4/lz4frame_static.h lz4/lz4hc.h lz4/xxhash.h trailmakers.pb.h
-#	$(CXX) blueprint-unpacker.cc lz4/lz4.c lz4/lz4frame.c lz4/lz4hc.c lz4/xxhash.c trailmakers.pb.cc -lprotobuf -o "Blueprint Unpacker"
-
-# trailmakers.pb.cc
-# trailmakers.pd.cc
-# -static-libgcc -static-libstdc++         -Bstatic -g -lm 
-# -static-libgcc -static-libstdc++ -static -Bstatic -g -lm 

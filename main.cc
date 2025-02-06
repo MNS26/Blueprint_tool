@@ -17,99 +17,12 @@
 #include <google/protobuf/util/time_util.h>
 #include <google/protobuf/util/json_util.h>
 #include "trailmakers.pb.h"
+#include "smaz.h"
 
+#include "blueprint-packer.hpp"
 using namespace std;
-//using namespace google::protobuf;
-//using google::protobuf::util::TimeUtil;
-StructureGraphSaveDataProto sgsdp;
 
-int64_t decompress_data_internal(uint8_t* srcBuffer,size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize,size_t filled, size_t alreadyConsumed, LZ4F_dctx* dctx) {
-    int firstChunk = 1;
-    size_t ret = 1;
-    while (ret != 0) {
-        // Load more data
-        size_t readSize = firstChunk ? filled : srcBufferSize - alreadyConsumed; ; firstChunk = 0;
-        const void* srcPtr = (const char*)srcBuffer + alreadyConsumed; alreadyConsumed = 0;
-        const void* srcEnd = (const char*)srcPtr+readSize;
-        if (readSize == 0) {
-            printf("Decompress: not enough data\n");
-            return -EXIT_FAILURE;
-        }
-
-        /* Decompress:
-         * Continue while there is more input to read (srcPtr != srcEnd)
-         * and the frame isn't over (ret != 0)
-         */
-        while (srcPtr < srcEnd && ret != 0) {
-            // Any data within dst has been flushed at this stage
-            size_t dstSize = dstBufferSize;
-            size_t srcSize = (const char*)srcEnd - (const char*) srcPtr;
-            ret = LZ4F_decompress(dctx, dstBuffer,&dstSize, srcPtr,&srcSize,NULL);
-            if (LZ4F_isError(ret)) {
-                printf("Decompression error: %s\n", LZ4F_getErrorName(ret));
-                return -EXIT_FAILURE;
-            }
-            // Update data
-            srcPtr = (const char*)srcPtr + srcSize;
-        }
-        assert(srcPtr <= srcEnd);
-        /* Ensure all input data has been consumed.
-         * It is valid to have multiple frames in the same file,
-         * but this example only supports one frame.
-         */
-        if (srcPtr < srcEnd) {
-            printf("Decompress: Trailing data left in buffer after frame\n");
-            return -EXIT_FAILURE;
-        }
-    }
-    // Reverse over the buffer to find the last non-null character
-    // its not a fool proof way but should work (hopefully)
-    size_t filled_size = 0;
-    for (size_t i = dstBufferSize; i > 0; i--) {
-        if (dstBuffer[i - 1] != '\0') {
-            filled_size = i;  // Found the end
-            break;
-        }
-    }
-    return  filled_size; // return how many bytes we wrote 
-    //return 0;
-}
-
-
-size_t decompress_file_allocDst(uint8_t *srcBuffer, size_t srcBufferSize,uint8_t *dstBuffer, size_t dstBufferSize, LZ4F_dctx *dctx) {
-    // Read Frame header
-    assert(srcBufferSize >= LZ4F_HEADER_SIZE_MAX);  /* ensure LZ4F_getFrameInfo() can read enough data */
-    size_t const readSize = srcBufferSize;
-    if (readSize == 0 ) {
-        printf("Decompress: not enough input data\n");
-            return EXIT_FAILURE;
-    }
-
-    LZ4F_frameInfo_t info;
-    size_t consumedSize = readSize;
-    size_t const fires = LZ4F_getFrameInfo(dctx, &info, srcBuffer,&consumedSize);
-    if (LZ4F_isError(fires)) {
-        printf("LZ4F_getFrameInfo error: %s\n", LZ4F_getErrorName(fires));
-            return EXIT_FAILURE;
-    }
-
-    int const decompressionResult = decompress_data_internal(srcBuffer, srcBufferSize, dstBuffer, dstBufferSize, readSize-consumedSize, consumedSize, dctx);
-    return decompressionResult;
-}
-
-static int decompress_data(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize) {
-    LZ4F_dctx* dctx;
-    {
-        size_t const dctxStatus = LZ4F_createDecompressionContext(&dctx, LZ4F_VERSION);
-        if (LZ4F_isError(dctxStatus)) {
-            printf("LZ4F_dctx creation error: %s\n", LZ4F_getErrorName(dctxStatus));
-        }
-    }
-    int const result = !dctx ? 1 /* error */ : decompress_file_allocDst(srcBuffer,srcBufferSize,dstBuffer,dstBufferSize,dctx);
-    LZ4F_freeDecompressionContext(dctx);
-    return result;
-
-}
+blueprint_unpacker unpacker;
 
 long fsize(FILE *fp){
     long prev=ftell(fp);
@@ -118,44 +31,56 @@ long fsize(FILE *fp){
     fseek(fp,prev,SEEK_SET); //go back to where we were
     return sz;
 }
-// Function to extract binary data from image data
-std::vector<uint8_t> extract_data_from_image(const unsigned char *image_data, int width, int height) {
-    size_t offset = 0; // Track how much data has been written
 
-    std::vector<uint8_t> data;
-    data.resize(width * height * 3);
-    uint8_t *output_data = data.data();
+void writeFile(string path, string contents) {
+  FILE *fp = fopen(path.c_str(), "wb");
+  if (!fp) {
+    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
+    return;
+  }
+  int res = fwrite(contents.c_str(), 1, contents.size(), fp);
+  printf("res %d\n", res);
+  if (res != contents.size()) {
+    fprintf(stderr, "cant write entire file\n");
+  }
+  fclose(fp);
+}
 
-    // Extract binary data
-    for (int y = height - 1; y >= 0; y--) { // Start from the bottom row and work upwards
-        for (int x = 0; x < width; x++) { // Start from the left
-            int index = (y * width + x) * 4; // RGBA has 4 bytes per pixel
-            unsigned char alpha = image_data[index + 3];
-            if (alpha == 0) { // Alpha channel fully transparent
-                memcpy(&output_data[offset], &image_data[index], 3); // Copy RGB only
-                offset += 3;
-            }
-        }
-    }
+void writeFile(string path, std::vector<uint8_t> contents) {
+  FILE *fp = fopen(path.c_str(), "wb");
+  if (!fp) {
+    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
+    return;
+  }
+  int res = fwrite(contents.data(), 1, contents.size(), fp);
+  printf("res %d\n", res);
+  if (res != contents.size()) {
+    fprintf(stderr, "cant write entire file\n");
+  }
+  fclose(fp);
+}
+
+std::vector<uint8_t> readFile(string path) {
+  std::vector<uint8_t> data;
+
+  FILE *fp = fopen(path.c_str(), "rb");
+  if (!fp) {
+    fprintf(stderr, "Failed to open file\n");
     return data;
+  }
+  int size = fsize(fp);
+  data.resize(size);
+
+  int res = fread(data.data(), 1, size, fp);
+  if (res != size) {
+    fprintf(stderr, "unable to read entire file\n");
+    data.resize(0);
+    return data;
+  }
+  fclose(fp);
+  return data;
 }
 
-size_t decompress_protobuf(std::vector<uint8_t> protobuf, string *json_buffer) {
-
-    assert(sgsdp.ParseFromArray(protobuf.data(), protobuf.size()));
-    // Configure options for human-readable JSON
-    google::protobuf::util::JsonPrintOptions options;
-    options.add_whitespace = true; // Enable pretty printing
-    //options.always_print_primitive_fields = true; // Optionally include unset fields
-    options.preserve_proto_field_names = true; // Use Protobuf field names (instead of camelCase)
-
-    std::string message;
-    google::protobuf::util::MessageToJsonString(sgsdp,&message, options);
-
-    *json_buffer = message;
-    return message.size();;
-
-}
 
 #ifndef __WIN32
 void print_banner() {
@@ -224,57 +149,9 @@ void print_help() {
   }
 #endif
 
-void writeFile(string path, string contents) {
-  FILE *fp = fopen(path.c_str(), "wb");
-  if (!fp) {
-    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
-    return;
-  }
-  int res = fwrite(contents.c_str(), 1, contents.size(), fp);
-  printf("res %d\n", res);
-  if (res != contents.size()) {
-    fprintf(stderr, "cant write entire file\n");
-  }
-  fclose(fp);
-}
-
-void writeFile(string path, std::vector<uint8_t> contents) {
-  FILE *fp = fopen(path.c_str(), "wb");
-  if (!fp) {
-    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
-    return;
-  }
-  int res = fwrite(contents.data(), 1, contents.size(), fp);
-  printf("res %d\n", res);
-  if (res != contents.size()) {
-    fprintf(stderr, "cant write entire file\n");
-  }
-  fclose(fp);
-}
-
-std::vector<uint8_t> readFile(string path) {
-  std::vector<uint8_t> data;
-
-  FILE *fp = fopen(path.c_str(), "rb");
-  if (!fp) {
-    fprintf(stderr, "Failed to open file\n");
-    return data;
-  }
-  int size = fsize(fp);
-  data.resize(size);
-
-  int res = fread(data.data(), 1, size, fp);
-  if (res != size) {
-    fprintf(stderr, "unable to read entire file\n");
-    data.resize(0);
-    return data;
-  }
-  fclose(fp);
-  return data;
-}
 
 int main(int argc, char *argv[]) {
-    print_banner();
+  print_banner();
 
   int opt;
   string in_path;
@@ -283,9 +160,10 @@ int main(int argc, char *argv[]) {
   string out_path;
   string out_type;
   bool dump_UUID = false;
-  bool dump_SMAZ = false;
+  bool dump_Description = false;
+  bool print_info = false;
 
-  while ((opt = getopt(argc, argv, "p:j:o:O:i:I:b:hH")) != -1) {
+  while ((opt = getopt(argc, argv, "p:b:l:j:P:o:O:i:UDfI:hH")) != -1) {
     switch (opt) {
     case 'p':
       in_path = optarg;
@@ -307,7 +185,6 @@ int main(int argc, char *argv[]) {
       out_path = optarg;
       out_type = "protobuf";
       break;
-      
     case 'o':
       out_path = optarg;
       break;
@@ -324,7 +201,11 @@ int main(int argc, char *argv[]) {
       dump_UUID = true;
       break;
     case 'D':
-      dump_SMAZ = true;
+      dump_Description = true;
+      break;
+    case 'f':
+      print_info = true;
+      out_type = "info";
       break;
     case 'H':
     case 'h':
@@ -333,7 +214,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (in_path.empty() || out_path.empty()) {
+  if ((in_path.empty() || out_path.empty())&& !print_info) {
     print_help();
     return EXIT_SUCCESS;
   }
@@ -347,9 +228,17 @@ int main(int argc, char *argv[]) {
     uint32_t lz4_size = 0;
     uint32_t uuid_size = 0;
     uint32_t smaz_size = 0;
+    auto uuid_id_size = 0;
+    uint8_t legacy_with_uuid[] ={0x08,0x05,0x12}; // UUID from legacy blueprint that got updated
+
+    uint8_t prefix_uuid[] ={0x08,0x02,0x12}; // UUID prefix
+    uint8_t prefix_smaz[] ={0x31,0xff}; // SMAZ prefix
+
     std::vector<char> CreatorName;
-
-
+    std::vector<uint8_t> uuid;
+    std::vector<uint8_t> smaz;
+    std::vector<char> description;
+    
     bool UUID_out = false; // are only if we have a bin or png in
     bool SMAZ_out = false; // are only if we have a bin or png in
 
@@ -375,7 +264,7 @@ int main(int argc, char *argv[]) {
 
         // Call the extraction function
         // This fills the buffer and return the size of the extracted data (yes... we can use it to trim the buffer... "shut up")
-        binary_data = extract_data_from_image(image_data, width, height);
+        binary_data = unpacker.extract_data_from_image(image_data, width, height);
         has_header = true;
         stbi_image_free(image_data);
     }
@@ -425,12 +314,19 @@ int main(int argc, char *argv[]) {
           printf("UUID size %d\n", uuid_size);
           printf("SMAZ size %d\n", smaz_size);
 
-          // Pointer to the player UUID
-          UUID = binary_data.data() + offset_header + lz4_size;
+          if(0 == memcmp(legacy_with_uuid, (uint8_t*)(binary_data.data()+ offset_header + lz4_size), 3)) {
+            fprintf(stdout, "Updated legacy Blueprint Detected.\n");
+            fprintf(stdout, "This file has no real UUID\n");
+          }
+          uuid = std::vector<uint8_t>(binary_data.data()+ offset_header + lz4_size + 4, binary_data.data()+ offset_header + lz4_size + uuid_size); // skip 4 initial bytes since they arent usefull
 
+          smaz = std::vector<uint8_t>((binary_data.data()+ offset_header + lz4_size+ uuid_size)+2, binary_data.data()+ offset_header + lz4_size+ uuid_size + smaz_size); // skip first 2 
           // Pointer to vehicle SMAZ description
           SMAZChunk = binary_data.data() + offset_header + lz4_size + uuid_size;
-
+          description.resize(2048);
+          size_t size = smaz_decompress((char*)smaz.data(),smaz.capacity(),description.data(),description.capacity());
+          description.resize(size);
+          
           auto start = binary_data.begin() + offset_header;
 
           auto end = start + lz4_size;
@@ -468,7 +364,7 @@ int main(int argc, char *argv[]) {
 
     if (!lz4_data.empty() && !leagacy_file) {
       protobuf_data.resize(MAX_LZ4_DECOMPRESSED_SIZXE);
-      auto protobuf_size = decompress_data(lz4_data.data(), lz4_data.size(), protobuf_data.data(), protobuf_data.size());
+      auto protobuf_size = unpacker.decompress_data(lz4_data.data(), lz4_data.size(), protobuf_data.data(), protobuf_data.size());
       protobuf_data.resize(protobuf_size);
     }
 
@@ -487,8 +383,25 @@ int main(int argc, char *argv[]) {
 
     if (out_type == "json") {
       string json_data;
-      decompress_protobuf(protobuf_data, &json_data);
+      unpacker.decompress_protobuf(protobuf_data, &json_data);
       writeFile(out_path, json_data);
+    }
+    if (dump_UUID) {
+      auto old_out_path = out_path;
+      auto last_point = out_path.find_last_of(".");
+      out_path.replace(last_point,last_point+out_path.length(),"-uuid.text"); // changing file name on the fly
+      writeFile(out_path,uuid);
+      out_path = old_out_path;
+    }
+    if (dump_Description) {
+      auto old_out_path = out_path;
+      auto last_point = out_path.find_last_of(".");
+      out_path.replace(last_point,last_point+out_path.length(),"-description.text"); // changing file name on the fly
+      writeFile(out_path,(std::string)description.data());
+      out_path = old_out_path;
+    }
+    if (out_type == "info") {
+
     }
 
     // Cleanup

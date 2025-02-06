@@ -1,7 +1,7 @@
 PKG_CONFIG ?= pkg-config
 LIBS := `$(PKG_CONFIG) --libs protobuf`
 
-main: main.o blueprint-packer.o smaz.o
+main: main.o blueprint-packer.o smaz.o trailmakers.pb.o
 	$(CXX) -o $@ $^ -llz4 $(LIBS) -g
 
 blueprint-packer: blueprint-packer.o trailmakers.pb.o smaz.o
@@ -19,7 +19,7 @@ run: blueprint-unpacker
 
 #$(pkg-config protobuf --libs) -llz4 -lprotobuf-c -lprotoc
 
-main.o: main.cc
+main.o: main.cc trailmakers.pb.h
 
 smaz.o: smaz.cc
 

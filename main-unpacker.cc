@@ -6,23 +6,26 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
-
+#include <stdint.h>
 #include <lz4.h>
 #include <lz4frame.h>
 #include "stb/stb_image.h"
+#include "smaz.h"
+
+#include <cstdint>
 #include <ctime>
+#include <ostream>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <google/protobuf/util/time_util.h>
-#include <google/protobuf/util/json_util.h>
-#include "trailmakers.pb.h"
-#include "smaz.h"
+#include <vector>
 
 #include "blueprint-packer.hpp"
+
 using namespace std;
 
 blueprint_unpacker unpacker;
+
 
 long fsize(FILE *fp){
     long prev=ftell(fp);
@@ -60,28 +63,6 @@ void writeFile(string path, std::vector<uint8_t> contents) {
   fclose(fp);
 }
 
-std::vector<uint8_t> readFile(string path) {
-  std::vector<uint8_t> data;
-
-  FILE *fp = fopen(path.c_str(), "rb");
-  if (!fp) {
-    fprintf(stderr, "Failed to open file\n");
-    return data;
-  }
-  int size = fsize(fp);
-  data.resize(size);
-
-  int res = fread(data.data(), 1, size, fp);
-  if (res != size) {
-    fprintf(stderr, "unable to read entire file\n");
-    data.resize(0);
-    return data;
-  }
-  fclose(fp);
-  return data;
-}
-
-
 #ifndef __WIN32
 void print_banner() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
@@ -91,8 +72,8 @@ void print_banner() {
     fprintf(stdout, "║╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃ ━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┃ ┃╱╱╱╱┃ ┃╱╱┃ ┃ ╭━╮ ┃╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┃ ━━┫ ╭╯╱╱║\n");
     fprintf(stdout, "║╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃ ━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ╰━━╯ ┃ ┃ ┃ ┃╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┃ ━━┫ ┃╱╱╱║\n");
     fprintf(stdout, "║╱╱╰━━━━┻━━┻━━━━━┻━━━┫ ╭━┻━╯ ╰━┻━╯ ╰━┻━━╯╱╱╱╰━━━━━━┻━╯ ╰━┫ ╭━┻━╯ ╰━┻━━━┻━╯ ╰┻━━━┻━╯╱╱╱║\n");
-    fprintf(stdout, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stdout, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱Made by: Noah (MS26)╱╱╱║\n");
+    fprintf(stdout, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱Made by:┃ ┃╱Noah             (MS26)╱╱║\n");
+    fprintf(stdout, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱Michael Bishop (Clever)╱╱║\n");
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 
 }
@@ -122,8 +103,9 @@ void print_help() {
 }
 #else
 void print_banner() {
-    fprintf(stdout, "Blueprint Unpacker \n");
-    fprintf(stdout, "Made by: Noah (MS26) \n");
+    fprintf(stdout, "Blueprint Unpacker\n");
+    fprintf(stdout, "Made by: Noah             (MS26)\n");
+    fprintf(stdout, "         Michael Bishop (Clever)\n");
     fprintf(stdout, "\n");
 }
 void print_help() {
@@ -159,6 +141,7 @@ int main(int argc, char *argv[]) {
 
   string out_path;
   string out_type;
+
   bool dump_UUID = false;
   bool dump_Description = false;
   bool print_info = false;
@@ -214,7 +197,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if ((in_path.empty() || out_path.empty())&& !print_info) {
+  if ((in_path.empty() || out_path.empty())&& (!print_info || !dump_Description || !dump_UUID)) {
     print_help();
     return EXIT_SUCCESS;
   }
@@ -237,111 +220,54 @@ int main(int argc, char *argv[]) {
     std::vector<char> CreatorName;
     std::vector<uint8_t> uuid;
     std::vector<uint8_t> smaz;
-    std::vector<char> description;
+    std::string description;
+    std::string title;
     
-    bool UUID_out = false; // are only if we have a bin or png in
-    bool SMAZ_out = false; // are only if we have a bin or png in
 
     std::vector<uint8_t> binary_data; // raw image pixels
     std::vector<uint8_t> lz4_data; // raw lz4 compressed data
     std::vector<uint8_t> protobuf_data;
 
-    uint8_t* UUID = NULL;
-    uint8_t* SMAZChunk = NULL;
 
     bool has_header = false;
 
     if (in_type == "png") {
-        uint8_t *image_data = NULL;
-        int width, height, channels;
-        image_data = stbi_load(in_path.c_str(), &width, &height, &channels, 4); // Force RGBA (4 channels)
-        if (!image_data) {
-            fprintf(stderr, "Failed to load image: %s\n", in_path.c_str());
-            return EXIT_FAILURE;
-        }
-
-        printf("Loaded image: %s (Width: %d, Height: %d, Channels: %d)\n", in_path.c_str(), width, height, channels);
-
-        // Call the extraction function
-        // This fills the buffer and return the size of the extracted data (yes... we can use it to trim the buffer... "shut up")
-        binary_data = unpacker.extract_data_from_image(image_data, width, height);
-        has_header = true;
-        stbi_image_free(image_data);
+      unpacker.extractFromImage(in_path);
+//        uint8_t *image_data = NULL;
+//        int width, height, channels;
+//        image_data = stbi_load(in_path.c_str(), &width, &height, &channels, 4); // Force RGBA (4 channels)
+//        if (!image_data) {
+//            fprintf(stderr, "Failed to load image: %s\n", in_path.c_str());
+//            return EXIT_FAILURE;
+//        }
+//
+//        printf("Loaded image: %s (Width: %d, Height: %d, Channels: %d)\n", in_path.c_str(), width, height, channels);
+//
+//        // Call the extraction function
+//        // This fills the buffer and return the size of the extracted data (yes... we can use it to trim the buffer... "shut up")
+//        binary_data = unpacker.extract_data_from_image(image_data, width, height);
+//        has_header = true;
+//        unpacker.has_header = true;
+//        stbi_image_free(image_data);
     }
-
     if (in_type == "binary") {
-        binary_data = readFile(in_path);
-        if (binary_data.empty()) return EXIT_FAILURE;
-        has_header = true;
+      unpacker.extractFromBinary(in_path);
+//        binary_data = readFile(in_path);
+//        if (binary_data.empty()) return EXIT_FAILURE;
+//        has_header = true;
+//        unpacker.has_header = true;
+    }
+    if (in_type == "lz4") {
+      unpacker.extractFromlz4(in_path);
+//      lz4_data = readFile(in_path);
+//      if (lz4_data.empty()) return EXIT_FAILURE;
     }
 
-    if (out_type == "binary") {
-      writeFile(out_path, binary_data);
+    if (in_type == "protobuf") {
+      unpacker.extractFromProtobuf(in_path);
     }
-
-    // those are only possible if we get the raw bin file or the entire PNG
-    if (has_header) {
-
-        offset_header += binary_data[offset_header]+1;         // SaveGamePNG size + own byte (17+1)
-        SaveGameVersion = (uint32_t)binary_data[offset_header];// get PNG Save version (>4 means we have lz4 )
-        offset_header += sizeof(SaveGameVersion);              // Move forward 4 bytes (Version num)
-        offset_header += binary_data[offset_header]+1;         // (version string + own byte)
-        offset_header += binary_data[offset_header]+1;         // (creator string + own byte)
-        offset_header += binary_data[offset_header]+1;         // (structuresize string + own byte)
-        if( SaveGameVersion > 4) {
-        offset_header += binary_data[offset_header]+1;         // (ident string + own byte)
-        offset_header += binary_data[offset_header]+1;         // (metasize string + own byte)
-        offset_header += 22;                                   // skip 22 bytes of unknown data
-        } else {
-          offset_header += 18;                                 // skip 18 bytes of unknown data
-          leagacy_file = true;                                 // Only true if we have a raw protobuf instead
-        }
-        CreatorNameSize = binary_data[offset_header];          // (Creator name string size)
-        CreatorName.reserve(CreatorNameSize);
-        offset_header++;
-        CreatorName.assign(binary_data.begin() + offset_header, binary_data.begin() + offset_header + CreatorNameSize);
-        offset_header += CreatorNameSize;
-        if (!leagacy_file) {
-          lz4_size = *(uint32_t*)(binary_data.data()+offset_header); // get LZ4 size
-          offset_header += sizeof(lz4_size);
-          uuid_size = *(uint32_t*)(binary_data.data()+offset_header); // get uuid size
-          offset_header += sizeof(uuid_size);
-          smaz_size = *(uint32_t*)(binary_data.data()+offset_header); // get smaz size
-          offset_header += sizeof(smaz_size);
-          offset_header += 2; // jump 2 forward 
-                  
-          printf("LZ4 size %d\n", lz4_size);
-          printf("UUID size %d\n", uuid_size);
-          printf("SMAZ size %d\n", smaz_size);
-
-          if(0 == memcmp(legacy_with_uuid, (uint8_t*)(binary_data.data()+ offset_header + lz4_size), 3)) {
-            fprintf(stdout, "Updated legacy Blueprint Detected.\n");
-            fprintf(stdout, "This file has no real UUID\n");
-          }
-          uuid = std::vector<uint8_t>(binary_data.data()+ offset_header + lz4_size + 4, binary_data.data()+ offset_header + lz4_size + uuid_size); // skip 4 initial bytes since they arent usefull
-
-          smaz = std::vector<uint8_t>((binary_data.data()+ offset_header + lz4_size+ uuid_size)+2, binary_data.data()+ offset_header + lz4_size+ uuid_size + smaz_size); // skip first 2 
-          // Pointer to vehicle SMAZ description
-          SMAZChunk = binary_data.data() + offset_header + lz4_size + uuid_size;
-          description.resize(2048);
-          size_t size = smaz_decompress((char*)smaz.data(),smaz.capacity(),description.data(),description.capacity());
-          description.resize(size);
-          
-          auto start = binary_data.begin() + offset_header;
-
-          auto end = start + lz4_size;
-          lz4_data = std::vector<uint8_t>(start, end);
-
-        } else {
-          legacy_protobuf_size = *(uint32_t*)(binary_data.data()+offset_header); // get legacy protobuf size
-          offset_header += sizeof(legacy_protobuf_size); // shift over by 4
-          offset_header += 3; // shift over by 3 (this lines up with protobuf @0xc0)
-
-        }
-
-    }
-
-    if (leagacy_file) {
+    unpacker.parse();
+    if (unpacker.isLegacyBlueprint()) {
       fprintf(stdout,"Legacy Blueprint detected!\n");
       fprintf(stdout,"This file has no description or UUID\n");
       fprintf(stdout,"Available outputs are: Binary, Protobuf, Json\n");
@@ -352,19 +278,14 @@ int main(int argc, char *argv[]) {
         out_path.replace(last_point+1,last_point+5,out_type); // replacing extention with out_type
       }
     }
-
-    if (in_type == "lz4") {
-      lz4_data = readFile(in_path);
-      if (lz4_data.empty()) return EXIT_FAILURE;
-    }
-
+    
     if (out_type == "lz4") {
-      writeFile(out_path, lz4_data);
+      writeFile(out_path, unpacker.getLz4());
     }
 
-    if (!lz4_data.empty() && !leagacy_file) {
+    if (!lz4_data.empty() && !unpacker.isLegacyBlueprint()) {
       protobuf_data.resize(MAX_LZ4_DECOMPRESSED_SIZXE);
-      auto protobuf_size = unpacker.decompress_data(lz4_data.data(), lz4_data.size(), protobuf_data.data(), protobuf_data.size());
+      auto protobuf_size = unpacker.decompress_lz4(lz4_data.data(), lz4_data.size(), protobuf_data.data(), protobuf_data.size());
       protobuf_data.resize(protobuf_size);
     }
 
@@ -373,31 +294,32 @@ int main(int argc, char *argv[]) {
       protobuf_data.assign(binary_data.begin()+offset_header, binary_data.begin()+offset_header+legacy_protobuf_size);
     }
 
-    if (in_type == "protobuf") {
-      protobuf_data = readFile(in_path);
+    if (out_type == "binary") {
+      writeFile(out_path, unpacker.getBinary());
     }
 
     if (out_type == "protobuf") {
-      writeFile(out_path, protobuf_data);
+      writeFile(out_path, unpacker.getProtobuf());
     }
 
     if (out_type == "json") {
-      string json_data;
-      unpacker.decompress_protobuf(protobuf_data, &json_data);
-      writeFile(out_path, json_data);
+//      string json_data;
+//      unpacker.decompress_protobuf(protobuf_data);
+      writeFile(out_path, unpacker.getVehicle());
     }
     if (dump_UUID) {
       auto old_out_path = out_path;
       auto last_point = out_path.find_last_of(".");
-      out_path.replace(last_point,last_point+out_path.length(),"-uuid.text"); // changing file name on the fly
+      out_path.replace(last_point,last_point+out_path.length()," uuid.txt"); // changing file name on the fly
       writeFile(out_path,uuid);
       out_path = old_out_path;
     }
     if (dump_Description) {
       auto old_out_path = out_path;
       auto last_point = out_path.find_last_of(".");
-      out_path.replace(last_point,last_point+out_path.length(),"-description.text"); // changing file name on the fly
-      writeFile(out_path,(std::string)description.data());
+      out_path.replace(last_point,last_point+out_path.length()," description.txt"); // changing file name on the fly
+      writeFile(out_path,(std::string)title.data());
+      writeFile(out_path,(std::string)title + "\r\n"+description);
       out_path = old_out_path;
     }
     if (out_type == "info") {

@@ -28,7 +28,13 @@ static char *Smaz_cb[241] = {
 ""                           ,"\003er |"                     ,"\003es ~\002is%"                ,"\002it/"                               ,""                              ,"\002iv\272"                                ,""                           ,"\002t #\ahttp://C\001x\372"      ,"\002la\211"                                           ,"\001<\341",
 "\003, a\224"
 };
-//\n|?|16| b|y|te| r|a|m| |(0|x|300| |-| |0|x|3FF)\0x12|o
+// 5555555555
+// 77777777
+// C|om|b|at\"
+// ha|m|st|er|b|alls
+// 76561198033275927?
+// \n|st|ea|m|to|k|en
+
 /* Reverse compression codebook, used for decompression */
 static char *Smaz_rcb[254] = {
 /*0  */ " "    ,"the" ,"e"  ,"t"    ,"a"  ,"of"  ,"o"   ,"and"    ,"i"     ,"n"  ,
@@ -155,7 +161,7 @@ int smaz_decompress(char *in, int inlen, char *out, int outlen) {
             inlen -= 2;
         } else if (*c == 0xff) {
             /* Verbatim string */
-            int len = (*(c+1))+0;
+            int len = (*(c+1));
             if (outlen < len) return _outlen++;
             memcpy(out,c+2,len);
             out += len;

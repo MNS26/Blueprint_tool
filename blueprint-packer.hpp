@@ -13,8 +13,15 @@ public:
   uint32_t uuid_size = 0;
   uint32_t smaz_size = 0;
   uint32_t uuid_id_size = 0;
-  uint8_t legacy_with_uuid[3] ={0x08,0x05,0x12}; // UUID from legacy blueprint that got updated
+  bool legacy_with_uuid = false;
   bool has_header = false;
+
+  uint8_t TitleMarker = 0x31;
+  uint8_t DescriptionMarker = 0x12;
+  uint8_t TagMarker = 0x1A;
+  uint8_t CreatorMarker = 0x22; // marker in test form (\")
+  uint8_t SteamTokenMarker = 0x2A; // marker in test form (or)
+
 private:
 
   std::vector<uint8_t> binary;
@@ -22,7 +29,7 @@ private:
   std::vector<uint8_t> protobuf;
   std::vector<uint8_t> smaz;
   std::string Vehicle;
-  std::vector<uint8_t> UUID;
+  std::string UUID;
   std::string Title;
   std::string Description;
   std::string Tag;
@@ -43,7 +50,6 @@ private:
   int ImgChannels = 0;
   StructureGraphSaveDataProto sgsdp;
 
-
   int64_t decompress_data_internal(uint8_t* srcBuffer,size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize,size_t filled, size_t alreadyConsumed, LZ4F_dctx* dctx);
   size_t decompress_file_allocDst(uint8_t *srcBuffer, size_t srcBufferSize,uint8_t *dstBuffer, size_t dstBufferSize, LZ4F_dctx *dctx);
 
@@ -51,19 +57,20 @@ private:
   void writeFile(string path, string contents);
   void writeFile(string path, std::vector<uint8_t> contents);
   std::vector<uint8_t> readFile(string path);
+  void extract_data_from_image(const unsigned char *image_data, int width, int height);
 
 public:
   void parse();
 
-  std::vector<uint8_t> getBinary() const {return binary;}
-  std::vector<uint8_t> getLz4() const {return lz4Data;}
-  std::vector<uint8_t> getProtobuf() const {return protobuf;}
-  std::vector<uint8_t> getSmaz() const {return smaz;}
-  std::string getVehicle() const {return Vehicle;}
-  std::string getTitle() const {return Title;}
-  std::string getDescription() const {return Description;}
-  std::string getCreator() const {return Creator;}
-  std::string getSteamToken() const {return SteamToken;}
+  auto getBinary() const {return binary;}
+  auto getLz4() const {return lz4Data;}
+  auto getProtobuf() const {return protobuf;}
+  auto getSmaz() const {return smaz;}
+  auto getVehicle() const {return Vehicle;}
+  auto getTitle() const {return Title;}
+  auto getDescription() const {return Description;}
+  auto getCreator() const {return Creator;}
+  auto getSteamToken() const {return SteamToken;} // yes... it will be in the code but not in the help window
   bool isLegacyBlueprint() const {return leagacy_file;}
 
   bool extractFromImage(std::string filepath);
@@ -71,20 +78,19 @@ public:
   bool extractFromlz4(std::string filepath);
   bool extractFromProtobuf(std::string filepath);
 
-  void extractUUID(bool enable);
-  void extractTitle(bool enable);
-  void extractDescription(bool enable);
-  void extractTag(bool enable);
-  void extractCreator(bool enable);
-  void extractSteamToken(bool enable); // yes... it will be in the code but not in the help window
-
-  void extract_data_from_image(const unsigned char *image_data, int width, int height);
-  
+  void extractLz4();
   int decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize);
+  void extractProtobuf();
   bool decompress_protobuf();
+  int get_index_of(uint8_t *t, size_t cap, int val, uint offset);
+  int get_index_of(char *t, size_t cap, int val, uint offset);
+  void extractJson();
+  void extractUUID();
+  void extractSmaz();
+  size_t getSmazLEB(uint8_t* buffptr, uint8_t &consumed, uint16_t offset, uint8_t maxFromOffset);
+  size_t getSmazLEB(char* buffptr, uint8_t &consumed, uint16_t offset, uint8_t maxFromOffset);
   void decompress_smaz();
 
   blueprint_unpacker(/* args */);
   ~blueprint_unpacker();
 };
-

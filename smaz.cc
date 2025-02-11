@@ -34,7 +34,7 @@ static char *Smaz_cb[241] = {
 // ha|m|st|er|b|alls
 // 76561198033275927?
 // \n|st|ea|m|to|k|en
-
+// y p ate \" 
 /* Reverse compression codebook, used for decompression */
 static char *Smaz_rcb[254] = {
 /*0  */ " "    ,"the" ,"e"  ,"t"    ,"a"  ,"of"  ,"o"   ,"and"    ,"i"     ,"n"  ,

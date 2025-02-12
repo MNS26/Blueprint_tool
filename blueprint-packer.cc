@@ -233,7 +233,7 @@ void blueprint_unpacker::decompress_smaz() {
   SteamToken.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
 
-
+  tempString.clear();
 }
 void blueprint_unpacker::extractUUID() {
   // UUID data layout:

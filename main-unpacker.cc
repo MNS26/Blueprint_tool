@@ -340,8 +340,20 @@ int main(int argc, char *argv[]) {
       auto old_out_path = out_path;
       auto last_point = out_path.find_last_of(".");
       out_path.replace(last_point,last_point+out_path.length()," description.txt"); // changing file name on the fly
-      writeFile(out_path,(std::string)title.data());
-      writeFile(out_path,(std::string)title + "\r\n"+description);
+      std::string temp;
+      temp = unpacker.getTitle();
+      temp.append("\n");
+      temp.append(unpacker.getDescription());
+      temp.append("\n");
+      temp.append(unpacker.getTag());
+      temp.append("\n");
+      temp.append(unpacker.getCreator());
+      temp.append("\n");
+      temp.append(unpacker.getSteamToken());
+      temp.append("\n");
+      
+      writeFile(out_path,temp);
+      //writeFile(out_path,string("\n").append(unpacker.getCreator()));
       out_path = old_out_path;
     }
     if (out_type == "info") {

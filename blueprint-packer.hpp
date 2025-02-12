@@ -69,6 +69,7 @@ public:
   auto getVehicle() const {return Vehicle;}
   auto getTitle() const {return Title;}
   auto getDescription() const {return Description;}
+  auto getTag() const {return Tag;}
   auto getCreator() const {return Creator;}
   auto getSteamToken() const {return SteamToken;} // yes... it will be in the code but not in the help window
   bool isLegacyBlueprint() const {return leagacy_file;}

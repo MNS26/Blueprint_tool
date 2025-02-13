@@ -1,5 +1,12 @@
-#define STB_IMAGE_IMPLEMENTATION
-#define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
+//#define WIN32_LEAN_AND_MEAN
+#ifdef WIN32_LEAN_AND_MEAN
+#ifdef __WIN32
+//#include "Windows.h"
+//#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+//#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+#endif
+//#endif
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,10 +14,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <stdint.h>
-#include <lz4.h>
-#include <lz4frame.h>
-#include "stb/stb_image.h"
-#include "smaz.h"
+
 
 #include <cstdint>
 #include <ctime>
@@ -20,14 +24,16 @@
 #include <string>
 #include <vector>
 
+#define STB_IMAGE_IMPLEMENTATION
+#define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
+#include <lz4.h>
+#include <lz4frame.h>
+#include "stb/stb_image.h"
+#include "smaz.h"
 #include "blueprint-packer.hpp"
 
-#ifdef __WIN32
-#include <Windows.h>
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-#endif
-#endif
+
+
 using namespace std;
 
 blueprint_unpacker unpacker;
@@ -68,20 +74,20 @@ void writeFile(string path, std::vector<uint8_t> contents) {
   }
   fclose(fp);
 }
-#ifdef __WIN32
-void enable_cmd_vt() {
-  HANDLE h_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-  DWORD mode = 0;
-  GetConsoleMode(h_stdout, &mode);
-  mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-  SetConsoleMode(h_stdout, mode);
-}
-void change_charset_utf8() {
-  SetConsoleCP(CP_UTF8);
-  SetConsoleOutputCP(CP_UTF8);
-}
-#endif
-//#ifndef __WIN32
+//#ifdef __WIN32
+//void enable_cmd_vt() {
+//  HANDLE h_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
+//  DWORD mode = 0;
+//  GetConsoleMode(h_stdout, &mode);
+//  mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+//  SetConsoleMode(h_stdout, mode);
+//}
+//void change_charset_utf8() {
+//  SetConsoleCP(CP_UTF8);
+//  SetConsoleOutputCP(CP_UTF8);
+//}
+//#endif
+#ifndef __WIN32
 void print_banner() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stdout, "║╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━╮╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱║\n");
@@ -119,42 +125,42 @@ void print_help() {
     fprintf(stdout, "║ -D                                 dump Description to text file                    ║\n");
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
-//#else
-//void print_banner() {
-//    fprintf(stdout, "Blueprint Unpacker\n");
-//    fprintf(stdout, "Made by: Noah             (MS26)\n");
-//    fprintf(stdout, "         Michael Bishop (Clever)\n");
-//    fprintf(stdout, "\n");
-//}
-//void print_help() {
-//
-//    fprintf(stdout, "This tool takes \"blueprint\" images and converts it to the following types:\n");
-//    fprintf(stdout, "Raw binary                         (direct rip from the image)\n");
-//    fprintf(stdout, "lz4 commpressed + user data        (compressed vehicle data and user data)\n");
-//    fprintf(stdout, "protobuffer     + user data        (raw vehicle structure data and user data)\n");
-//    fprintf(stdout, "JSON            + user data        (parsed vehicle structure data and user data)\n");
-//    fprintf(stdout, "\n");
-//    fprintf(stdout, "-H/-h                            shows this help screen\n");
-//    fprintf(stdout, "-p <path>                        path to png input file\n");
-//    fprintf(stdout, "-i <path>                        path to input file\n");
-//    fprintf(stdout, "-I [png, binary, lz4. protobuf]  input file type\n");
-//    fprintf(stdout, "-o <path>                        path to outpout file\n");
-//    fprintf(stdout, "-O [binary, lz4, protobuf, json] Output file type\n");
-//    fprintf(stdout, "-b <path>                        path to outpout Binary file\n");
-//    fprintf(stdout, "-l <path lz4>                    path to output lz4 file\n");
-//    fprintf(stdout, "-P <path protobuf>               path to output protobuf file\n");
-//    fprintf(stdout, "-j <path json>                   path to output json file\n");
-//    fprintf(stdout, "-U                               dump UUID to text file\n");
-//    fprintf(stdout, "-D                               dump Description to text file\n");
-//  }
-//#endif
+#else
+void print_banner() {
+    fprintf(stdout, "Blueprint Unpacker\n");
+    fprintf(stdout, "Made by:  Noah  F277f4\n");
+    fprintf(stdout, "        Clever    Vali\n");
+    fprintf(stdout, "\n");
+}
+void print_help() {
+
+    fprintf(stdout, "This tool takes \"blueprint\" images and converts it to the following types:\n");
+    fprintf(stdout, "Raw binary                         (direct rip from the image)\n");
+    fprintf(stdout, "lz4 commpressed + user data        (compressed vehicle data and user data)\n");
+    fprintf(stdout, "protobuffer     + user data        (raw vehicle structure data and user data)\n");
+    fprintf(stdout, "JSON            + user data        (parsed vehicle structure data and user data)\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "-H/-h                            shows this help screen\n");
+    fprintf(stdout, "-p <path>                        path to png input file\n");
+    fprintf(stdout, "-i <path>                        path to input file\n");
+    fprintf(stdout, "-I [png, binary, lz4. protobuf]  input file type\n");
+    fprintf(stdout, "-o <path>                        path to outpout file\n");
+    fprintf(stdout, "-O [binary, lz4, protobuf, json] Output file type\n");
+    fprintf(stdout, "-b <path>                        path to outpout Binary file\n");
+    fprintf(stdout, "-l <path lz4>                    path to output lz4 file\n");
+    fprintf(stdout, "-P <path protobuf>               path to output protobuf file\n");
+    fprintf(stdout, "-j <path json>                   path to output json file\n");
+    fprintf(stdout, "-U                               dump UUID to text file\n");
+    fprintf(stdout, "-D                               dump Description to text file\n");
+  }
+#endif
 
 
 int main(int argc, char *argv[]) {
-#ifdef __win32
-  enable_cmd_vt();
-  change_charset_utf8();
-#endif
+//#ifdef __win32
+//  enable_cmd_vt();
+//  change_charset_utf8();
+//#endif
   print_banner();
 
   int opt;
@@ -340,15 +346,15 @@ int main(int argc, char *argv[]) {
       auto old_out_path = out_path;
       auto last_point = out_path.find_last_of(".");
       out_path.replace(last_point,last_point+out_path.length()," description.txt"); // changing file name on the fly
-      std::string temp;
-      temp = unpacker.getTitle();
-      temp.append("\n");
+      std::string temp("Title:\n");
+      temp.append(unpacker.getTitle());
+      temp.append("\n\rDescription:\n");
       temp.append(unpacker.getDescription());
-      temp.append("\n");
+      temp.append("\n\rTag:\n");
       temp.append(unpacker.getTag());
-      temp.append("\n");
+      temp.append("\n\rCreator:\n");
       temp.append(unpacker.getCreator());
-      temp.append("\n");
+      temp.append("\n\rSteamToken\n");
       temp.append(unpacker.getSteamToken());
       temp.append("\n");
       

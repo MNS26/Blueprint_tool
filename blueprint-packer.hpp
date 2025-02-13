@@ -83,8 +83,8 @@ public:
   int decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize);
   void extractProtobuf();
   bool decompress_protobuf();
-  int get_index_of(uint8_t *t, size_t cap, int val, uint offset);
-  int get_index_of(char *t, size_t cap, int val, uint offset);
+  int get_index_of(uint8_t* t, size_t cap, int val, uint32_t offset);
+  int get_index_of(char* t, size_t cap, int val, uint32_t offset);
   void extractJson();
   void extractUUID();
   void extractSmaz();

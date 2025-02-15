@@ -1,9 +1,13 @@
+
+#define STB_IMAGE_IMPLEMENTATION
 #define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <google/protobuf/util/time_util.h>
-#include <google/protobuf/util/json_util.h>
+//#include "lib/protobuf/src/google/protobuf/util/time_util.h"
+//#include "lib/protobuf/src/google/protobuf/util/json_util.h"
+#include "google/protobuf/util/time_util.h"
+#include "google/protobuf/util/json_util.h"
 #include <lz4.h>
 #include <lz4frame.h>
 
@@ -13,10 +17,10 @@
 #include <string>
 #include "stb/stb_image.h"
 #include "smaz.h"
-#include "blueprint-packer.hpp"
+#include "blueprint-unpacker.hpp"
 using namespace std;
-//using namespace google::protobuf;
-//using google::protobuf::util::TimeUtil;
+using namespace google::protobuf;
+using google::protobuf::util::TimeUtil;
 
 blueprint_unpacker::blueprint_unpacker(/* args */)
 {}

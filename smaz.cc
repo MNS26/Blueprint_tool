@@ -1,7 +1,7 @@
 #include <string.h>
 
 /* Our compression codebook, used for compression */
-static char *Smaz_cb[241] = {
+static const char *Smaz_cb[241] = {
 "\002s,\266"                 ,"\003had\232\002leW"           ,"\003on \216"                    ,""                                      ,"\001yS"                        ,"\002ma\255\002li\227"                      ,"\003or \260"                ,""                                ,"\002ll\230\003s t\277"                                ,"\004fromg\002mel", 
 ""                           ,"\003its\332"                  ,"\001z\333"                      ,"\003ingF"                              ,"\001>\336"                     ,"\001 \000\003   (\002nc\344"               ,"\002nd=\003 on\312"         ,"\002ne\213\003hat\276\003re q"   ,""                                                     ,"\002ngT\003herz\004have\306\003s o\225",
 ""                           ,"\003ionk\003s a\254\002ly\352","\003hisL\003 inN\003 be\252"    ,""                                      ,"\003 fo\325\003 of \003 ha\311",""                                          ,"\002of\005"                 ,"\003 co\241\002no\267\003 ma\370",""                                                     ,"",
@@ -36,7 +36,7 @@ static char *Smaz_cb[241] = {
 // \n|st|ea|m|to|k|en
 // y p ate \" 
 /* Reverse compression codebook, used for decompression */
-static char *Smaz_rcb[254] = {
+static const char *Smaz_rcb[254] = {
 /*0  */ " "    ,"the" ,"e"  ,"t"    ,"a"  ,"of"  ,"o"   ,"and"    ,"i"     ,"n"  ,
 /*10 */ "s"    ,"e "  ,"r"  ," th"  ," t" ,"in"  ,"he"  ,"th"     ,"h"     ,"he ",
 /*20 */ "to"   ,"\r\n","l"  ,"s "   ,"d"  ," a"  ,"an"  ,"er"     ,"c"     ," o" ,
@@ -75,7 +75,7 @@ int smaz_compress(char *in, int inlen, char *out, int outlen) {
     while(inlen) {
         int j = 7, needed;
         char *flush = NULL;
-        char *slot;
+        const char *slot;
 
         h1 = h2 = in[0]<<3;
         if (inlen > 1) h2 += in[1];
@@ -170,7 +170,7 @@ int smaz_decompress(char *in, int inlen, char *out, int outlen) {
             inlen -= 2+len;
         } else {
             /* Codebook entry */
-            char *s = Smaz_rcb[*c];
+            const char *s = Smaz_rcb[*c];
             int len = strlen(s);
 
             if (outlen < len) return _outlen++;

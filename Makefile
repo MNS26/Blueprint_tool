@@ -1,9 +1,9 @@
 PKG_CONFIG ?= pkg-config
-#`$(PKG_CONFIG) --libs protobuf`
-LIBS := -lprotobuf -lprotobuf-lite # -lprotobuf -lprotobuf-lite -lprotobuf
+LIBS := -lprotobuf -lprotobuf-lite
 CFLAGS := -DNDEBUG -g -Wall -Ilib/lz4/
 
-EXT := .exe
+# EXT := .exe
+LIBS += `$(PKG_CONFIG) --libs protobuf`
 
 all: blueprint-unpacker blueprint-repacker
 

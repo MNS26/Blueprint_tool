@@ -6,6 +6,7 @@
       protobuf_20 = self.callPackage ./protobuf.nix {
         inherit (nixpkgs.legacyPackages.x86_64-linux) gcc;
       };
+      protobuf = self.protobuf_20;
     };
   in
   {

@@ -6,4 +6,5 @@ stdenv.mkDerivation {
   buildInputs = [ lz4 protobuf ];
   nativeBuildInputs = [ pkg-config protobuf ];
   preferLocalBuild = true;
+  WINDOWS = stdenv.targetPlatform.isWindows;
 }

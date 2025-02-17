@@ -48,6 +48,6 @@ trailmakers.pb.cc trailmakers.pb.h: trailmakers.proto
 lib/lz4/liblz4.a:
 	$(MAKE) -C lib/lz4 liblz4.a
 
-install: blueprint-unpacker$(EXT)
+install: blueprint-unpacker$(EXT) blueprint-repacker$(EXT)
 	mkdir -pv $(out)/bin
 	cp $^ $(out)/bin

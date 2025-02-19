@@ -1,7 +1,7 @@
 
 #ifdef _WIN32
 #  define _WIN32_WINNT 0x0A00
-#  define WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
     // Minimal Windows.h
     #include <sdkddkver.h>
     #include <windef.h>
@@ -15,14 +15,15 @@
     #ifndef _MAC
     #include <wincon.h>
     #include <winver.h>
+#  define _WIN32_WINNT 0x0A00
     #endif
-
     #include <stdio.h>
     #include <stdint.h>
     #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
         #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
     #endif
 #endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -88,6 +89,7 @@ void writeFile(string path, std::vector<uint8_t> contents) {
   }
   fclose(fp);
 }
+
 #ifdef _WIN32
 void enable_cmd_vt() {
   HANDLE h_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -101,7 +103,7 @@ void change_charset_utf8() {
   SetConsoleOutputCP(CP_UTF8);
 }
 #endif
-//#ifndef __WIN32
+
 void print_banner() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stdout, "║╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━╮╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱║\n");
@@ -139,36 +141,6 @@ void print_help() {
     fprintf(stdout, "║ -D                                 dump Description to text file                    ║\n");
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
-//#else
-//void print_banner() {
-//    fprintf(stdout, "Blueprint Unpacker\n");
-//    fprintf(stdout, "Made by:  Noah  F277f4\n");
-//    fprintf(stdout, "        Clever    Vali\n");
-//    fprintf(stdout, "\n");
-//}
-//void print_help() {
-//
-//    fprintf(stdout, "This tool takes \"blueprint\" images and converts it to the following types:\n");
-//    fprintf(stdout, "Raw binary                         (direct rip from the image)\n");
-//    fprintf(stdout, "lz4 commpressed + user data        (compressed vehicle data and user data)\n");
-//    fprintf(stdout, "protobuffer     + user data        (raw vehicle structure data and user data)\n");
-//    fprintf(stdout, "JSON            + user data        (parsed vehicle structure data and user data)\n");
-//    fprintf(stdout, "\n");
-//    fprintf(stdout, "-H/-h                            shows this help screen\n");
-//    fprintf(stdout, "-p <path>                        path to png input file\n");
-//    fprintf(stdout, "-i <path>                        path to input file\n");
-//    fprintf(stdout, "-I [png, binary, lz4. protobuf]  input file type\n");
-//    fprintf(stdout, "-o <path>                        path to outpout file\n");
-//    fprintf(stdout, "-O [binary, lz4, protobuf, json] Output file type\n");
-//    fprintf(stdout, "-b <path>                        path to outpout Binary file\n");
-//    fprintf(stdout, "-l <path lz4>                    path to output lz4 file\n");
-//    fprintf(stdout, "-P <path protobuf>               path to output protobuf file\n");
-//    fprintf(stdout, "-j <path json>                   path to output json file\n");
-//    fprintf(stdout, "-U                               dump UUID to text file\n");
-//    fprintf(stdout, "-D                               dump Description to text file\n");
-//  }
-//#endif
-
 
 int main(int argc, char *argv[]) {
 #ifdef _WIN32
@@ -282,12 +254,6 @@ int main(int argc, char *argv[]) {
     
     if (out_type == "lz4") {
       writeFile(out_path, unpacker.getLz4());
-    }
-
-    if (!lz4_data.empty() && !unpacker.isLegacyBlueprint()) {
-      protobuf_data.resize(MAX_LZ4_DECOMPRESSED_SIZXE);
-      auto protobuf_size = unpacker.decompress_lz4(lz4_data.data(), lz4_data.size(), protobuf_data.data(), protobuf_data.size());
-      protobuf_data.resize(protobuf_size);
     }
 
     if (out_type == "binary") {

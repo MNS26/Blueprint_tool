@@ -1,8 +1,3 @@
-// needed data
-//
-// JSON
-// UUID
-// SMAZ
 #ifdef _WIN32
 #  define _WIN32_WINNT 0x0A00
     #define WIN32_LEAN_AND_MEAN
@@ -27,6 +22,7 @@
         #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
     #endif
 #endif
+
 #define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
 #include <stdint.h>
 #include <stdlib.h>
@@ -71,7 +67,6 @@ void change_charset_utf8() {
 }
 #endif
 
-//#ifndef __WIN32
 void print_banner() {
     fprintf(stderr, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stderr, "║╱╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━━━━━━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
@@ -110,35 +105,6 @@ void print_help() {
     fprintf(stdout, "║ -                                                                                   ║\n");
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
-//#else
-//void print_banner() {
-//    fprintf(stdout, "Blueprint Repacker \n");
-//    fprintf(stdout, "Made by: Noah (MS26) \n");
-//    fprintf(stdout, "\n");
-//}
-//void print_help() {
-//
-//    fprintf(stdout, "This tool takes \"blueprint\" data and converts it in to a image file:\n");
-//    fprintf(stdout, " \n");
-//    fprintf(stdout, " \n");
-//    fprintf(stdout, " \n");
-//    fprintf(stdout, " \n");
-//    fprintf(stdout, " \n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//    fprintf(stdout, "-\n");
-//  }
-//#endif
-//
 
 
 int main(int argc, char *argv[]) {

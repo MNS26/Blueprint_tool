@@ -37,3 +37,4 @@ blueprint_repacker::~blueprint_repacker() {
 	Creator.clear();
   SteamToken.clear();
 }
+

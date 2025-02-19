@@ -10,7 +10,6 @@ public:
   bool leagacy_file = false;
   uint32_t legacy_protobuf_size = 0;
   uint32_t lz4_size = 0;
-  uint32_t uuid_size = 0;
   uint32_t smaz_size = 0;
   uint32_t uuid_id_size = 0;
   bool legacy_with_uuid = false;
@@ -49,10 +48,23 @@ private:
   int ImgHeight = 0;
   int ImgChannels = 4;
   StructureGraphSaveDataProto sgsdp;
-  
+  bool CreateFakeHeader();
+  bool CompressToProto();
+  bool CompressToLz4();
+  bool GenerateUuid();
+  bool GenerateSmaz();
+  std::vector<uint8_t> readFile(string path);
+
 
 public:
-
+  bool GetImage(std::string filepath);
+  bool GetJson(std::string filepath);
+  bool GetTitleDescriptionTagCreatorToken(std::string filepath); // does the same as all the other calls but atomated from a text file
+  bool GetTitle(std::string text);
+  bool GetDescription(std::string text);
+  bool GetTag(std::string text);
+  bool GetCreator(std::string text);
+  bool GetToken(std::string text);
 
   blueprint_repacker(/* args */);
   ~blueprint_repacker();

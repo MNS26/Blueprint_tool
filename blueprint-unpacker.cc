@@ -1,6 +1,6 @@
 
 #define STB_IMAGE_IMPLEMENTATION
-#define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
+#define MAX_LZ4_DECOMPRESSED_SIZE (1024 * 1024 * 4)
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -130,7 +130,8 @@ int blueprint_unpacker::decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize,
 }
 
 bool blueprint_unpacker::decompress_protobuf() {
-	(sgsdp.ParseFromArray(protobufData.data(), protobufData.capacity()));
+  sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity());
+	//assert(sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity()));
 	// Configure options for human-readable JSON
 	google::protobuf::util::JsonPrintOptions options;
 	options.add_whitespace = true; // Enable pretty printing
@@ -222,11 +223,15 @@ void blueprint_unpacker::extractUUID() {
     memcpy(UUID.data(), uuidData.data()+3,uuid_len);
     break;
   case 0x05: // legacy blueprint updated with UUID placeholder
-  case 0x06: // No real UUID but has smaz and protobuf instead of lz4
     legacy_with_uuid = true;
     uuid_len = uuidData[3];
     UUID.resize(uuid_len);
     memcpy(UUID.data(), uuidData.data()+3,uuid_len);
+    break;
+  case 0x06: // No real UUID but has smaz and protobuf instead of lz4
+    uuid_len = uuidData[3];
+    UUID.resize(uuid_len);
+    memcpy(UUID.data(), uuidData.data()+4,uuid_len);
     break;
   default: // not implemented version
     fprintf(stderr, "unknown UUID version: %u. Check with creator!\n", uuidData[1]);
@@ -240,8 +245,6 @@ void blueprint_unpacker::extractUUID() {
 void blueprint_unpacker::extractVehicle() {
   VehicleData = std::vector<uint8_t>(binaryData.begin() + offset_header, binaryData.begin() + offset_header + VehicleLength);
 }
-void blueprint_unpacker::extractProtobuf() {}
-void blueprint_unpacker::extractJson() {}
 void blueprint_unpacker::parse() {
 
     // those are only possible if we get the raw bin file or the entire PNG
@@ -276,21 +279,22 @@ void blueprint_unpacker::parse() {
         offset_header += 3; // shift over by 3 (this lines up with protobuf @0xc0)
       }
       if(VehicleLength)
-      extractVehicle();
+        extractVehicle();
       if(UUIDLength)
-      extractUUID();
-      if(smazLength)
-      extractSmaz();
-      decompress_smaz();
+        extractUUID();
+      if(smazLength){
+        extractSmaz();
+        decompress_smaz();
+      }
     }
     if (!memcmp(VehicleData.data(),Lz4MagicHeader.data(),Lz4MagicHeader.capacity())) {
       hasLz4MagicHeader = true;
-      decompress_lz4(VehicleData.data(), VehicleData.size(), protobufData.data(), protobufData.size());
+      protobufData.resize(MAX_LZ4_DECOMPRESSED_SIZE);
+      protobufData.resize(decompress_lz4(VehicleData.data(), VehicleData.size(), protobufData.data(), protobufData.size()));
     }else {
       fprintf(stdout, "Updated legacy Blueprint Detected.\n");
       fprintf(stdout, "This file has no LZ4 magic header\n");
       protobufData = std::vector<uint8_t>(VehicleData);
-      protobufData = VehicleData;
     }
     decompress_protobuf();
     if(legacy_with_uuid) {

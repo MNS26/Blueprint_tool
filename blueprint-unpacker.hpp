@@ -11,7 +11,6 @@ private:
   bool hasLz4MagicHeader = false;
   bool leagacy_file = false;
   bool legacy_with_uuid = false;
-
   uint8_t offset_header = 98;
   uint32_t SaveGameVersion = 0;
   uint32_t legacy_protobuf_size = 0;
@@ -35,9 +34,9 @@ private:
   std::string Creator;
   std::string SteamToken;
 
-  size_t binarySize = 0;
-  size_t lz4DataLength = 0;
-  size_t ProtobufLength = 0;
+  uint32_t binarySize = 0;
+  uint32_t lz4DataLength = 0;
+  uint32_t ProtobufLength = 0;
   uint32_t smazLength = 0;  
   uint32_t VehicleLength = 0;
   uint32_t UUIDLength = 0;
@@ -60,11 +59,9 @@ private:
 
   void extractVehicle();
   int decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize);
-  void extractProtobuf();
   bool decompress_protobuf();
   int get_index_of(uint8_t* t, size_t cap, int val, uint32_t offset);
   int get_index_of(char* t, size_t cap, int val, uint32_t offset);
-  void extractJson();
   void extractUUID();
   void extractSmaz();
   size_t getSmazLEB(uint8_t* buffptr, uint8_t &consumed, uint16_t offset, uint8_t maxFromOffset);
@@ -74,16 +71,16 @@ private:
 public:
   void parse();
   void exportSteamToken() {enableSteamToken = true;};
-  auto getBinary() const {return binaryData;}
-  auto getLz4() const {return VehicleData;}
-  auto getProtobuf() const {return protobufData;}
-  auto getSmaz() const {return smazData;}
-  auto getVehicle() const {return Vehicle;}
-  auto getTitle() const {return Title;}
-  auto getDescription() const {return Description;}
-  auto getTag() const {return Tag;}
-  auto getCreator() const {return Creator;}
-  auto getSteamToken() const {return enableSteamToken ? "" : SteamToken;} // yes... it will be in the code but not in the help window
+  inline std::vector<uint8_t> getBinary() const {return binaryData;}
+  inline std::vector<uint8_t> getLz4() const {return VehicleData;}
+  inline std::vector<uint8_t> getProtobuf() const {return protobufData;}
+  inline std::vector<uint8_t> getSmaz() const {return smazData;}
+  inline std::string getVehicle() const {return Vehicle;}
+  inline std::string getTitle() const {return Title;}
+  inline std::string getDescription() const {return Description;}
+  inline std::string getTag() const {return Tag;}
+  inline std::string getCreator() const {return Creator;}
+  inline std::string getSteamToken() const {return enableSteamToken ? "" : SteamToken;} // yes... it will be in the code but not in the help window
   bool isLegacyBlueprint() const {return leagacy_file;}
 
   bool extractFromImage(std::string filepath);

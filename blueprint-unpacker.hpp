@@ -70,19 +70,20 @@ private:
 
 public:
   void parse();
-  void exportSteamToken() {enableSteamToken = true;};
+  inline void exportSteamToken() {enableSteamToken = true;};
+  inline bool getExportSteamTokenEnabled() const {return enableSteamToken;};
+  inline bool isLegacyBlueprint() const {return leagacy_file;}
   inline std::vector<uint8_t> getBinary() const {return binaryData;}
   inline std::vector<uint8_t> getLz4() const {return VehicleData;}
   inline std::vector<uint8_t> getProtobuf() const {return protobufData;}
   inline std::vector<uint8_t> getSmaz() const {return smazData;}
-  inline std::string getVehicle() const {return Vehicle;}
-  inline std::string getTitle() const {return Title;}
-  inline std::string getDescription() const {return Description;}
-  inline std::string getTag() const {return Tag;}
-  inline std::string getCreator() const {return Creator;}
-  inline std::string getSteamToken() const {return enableSteamToken ? "" : SteamToken;} // yes... it will be in the code but not in the help window
-  bool isLegacyBlueprint() const {return leagacy_file;}
-
+  inline std::string getVehicle() {return Vehicle;}
+  inline std::string getTitle() {return Title;}
+  inline std::string getDescription() {return Description;}
+  inline std::string getTag() {return Tag;}
+  inline std::string getCreator() {return Creator;}
+  inline std::string getSteamToken() const {return enableSteamToken ? SteamToken : "00000000-0000-0000-0000-000000000000";} // yes... it will be in the code but not in the help window
+  
   bool extractFromImage(std::string filepath);
   bool extractFromBinary(std::string filepath);
   bool extractFromlz4(std::string filepath);

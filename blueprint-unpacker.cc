@@ -130,7 +130,7 @@ int blueprint_unpacker::decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize,
 }
 
 bool blueprint_unpacker::decompress_protobuf() {
-  sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity());
+  sgsdp.ParseFromArray(protobufData.data(),protobufData.capacity());
 	//assert(sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity()));
 	// Configure options for human-readable JSON
 	google::protobuf::util::JsonPrintOptions options;
@@ -161,9 +161,8 @@ size_t blueprint_unpacker::getSmazLEB(uint8_t* buffptr, uint8_t &consumed, uint1
   return LEB;
 }
 
-
 void blueprint_unpacker::extractSmaz() {
-  smazData = std::vector<uint8_t>(binaryData.begin() + offset_header + VehicleLength, binaryData.begin() + offset_header + VehicleLength + UUIDLength);
+  smazData = std::vector<uint8_t>(binaryData.begin() + offset_header + VehicleLength+UUIDLength, binaryData.begin() + offset_header + VehicleLength + UUIDLength+smazLength);
 }
 
 void blueprint_unpacker::decompress_smaz() {

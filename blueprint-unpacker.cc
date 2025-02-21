@@ -4,13 +4,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-//#include "lib/protobuf/src/google/protobuf/util/time_util.h"
-//#include "lib/protobuf/src/google/protobuf/util/json_util.h"
 #include "google/protobuf/util/time_util.h"
 #include "google/protobuf/util/json_util.h"
 #include <lz4.h>
 #include <lz4frame.h>
-
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -18,7 +15,7 @@
 #include "stb/stb_image.h"
 #include "smaz.h"
 #include "blueprint-unpacker.hpp"
-using namespace std;
+
 using namespace google::protobuf;
 using google::protobuf::util::TimeUtil;
 
@@ -95,16 +92,24 @@ int64_t blueprint_unpacker::decompress_data_internal(uint8_t* srcBuffer,size_t s
 }
 
 
-size_t blueprint_unpacker::decompress_file_allocDst(uint8_t *srcBuffer, size_t srcBufferSize,uint8_t *dstBuffer, size_t dstBufferSize, LZ4F_dctx *dctx) {
+int blueprint_unpacker::decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize) {
 	// Read Frame header
 	assert(srcBufferSize >= LZ4F_HEADER_SIZE_MAX);  /* ensure LZ4F_getFrameInfo() can read enough data */
-	size_t const readSize = srcBufferSize;
+	
+  LZ4F_dctx* dctx;
+	LZ4F_frameInfo_t info;
+	
+  size_t const dctxStatus = LZ4F_createDecompressionContext(&dctx, LZ4F_VERSION);
+	if (LZ4F_isError(dctxStatus)) {
+	  printf("LZ4F_dctx creation error: %s\n", LZ4F_getErrorName(dctxStatus));
+	}
+	
+  size_t const readSize = srcBufferSize;
 	if (readSize == 0 ) {
 		printf("Decompress: not enough input data\n");
 	  return EXIT_FAILURE;
 	}
 
-	LZ4F_frameInfo_t info;
 	size_t consumedSize = readSize;
 	size_t const fires = LZ4F_getFrameInfo(dctx, &info, srcBuffer,&consumedSize);
 	if (LZ4F_isError(fires)) {
@@ -112,26 +117,13 @@ size_t blueprint_unpacker::decompress_file_allocDst(uint8_t *srcBuffer, size_t s
 		return EXIT_FAILURE;
 	}
 
-	int const decompressionResult = decompress_data_internal(srcBuffer, srcBufferSize, dstBuffer, dstBufferSize, readSize-consumedSize, consumedSize, dctx);
-	return decompressionResult;
-}
-
-int blueprint_unpacker::decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize) {
-	LZ4F_dctx* dctx;
-	{
-		size_t const dctxStatus = LZ4F_createDecompressionContext(&dctx, LZ4F_VERSION);
-		if (LZ4F_isError(dctxStatus)) {
-			printf("LZ4F_dctx creation error: %s\n", LZ4F_getErrorName(dctxStatus));
-		}
-	}
-	int const result = !dctx ? 1 /* error */ : decompress_file_allocDst(srcBuffer,srcBufferSize,dstBuffer,dstBufferSize,dctx);
+	int const result = !dctx ? 1 /* error */ : decompress_data_internal(srcBuffer, srcBufferSize, dstBuffer, dstBufferSize, readSize-consumedSize, consumedSize, dctx);//decompress_file_allocDst(srcBuffer,srcBufferSize,dstBuffer,dstBufferSize,dctx);
 	LZ4F_freeDecompressionContext(dctx);
 	return result;
 }
 
 bool blueprint_unpacker::decompress_protobuf() {
-  sgsdp.ParseFromArray(protobufData.data(),protobufData.capacity());
-	//assert(sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity()));
+  sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity());
 	// Configure options for human-readable JSON
 	google::protobuf::util::JsonPrintOptions options;
 	options.add_whitespace = true; // Enable pretty printing
@@ -366,35 +358,7 @@ long blueprint_unpacker::fsize(FILE *fp){
     return sz;
 }
 
-void blueprint_unpacker::writeFile(string path, string contents) {
-  FILE *fp = fopen(path.c_str(), "wb");
-  if (!fp) {
-    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
-    return;
-  }
-  int res = fwrite(contents.c_str(), 1, contents.size(), fp);
-  printf("res %d\n", res);
-  if (res != contents.size()) {
-    fprintf(stderr, "cant write entire file\n");
-  }
-  fclose(fp);
-}
-
-void blueprint_unpacker::writeFile(string path, std::vector<uint8_t> contents) {
-  FILE *fp = fopen(path.c_str(), "wb");
-  if (!fp) {
-    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
-    return;
-  }
-  int res = fwrite(contents.data(), 1, contents.size(), fp);
-  printf("res %d\n", res);
-  if (res != contents.size()) {
-    fprintf(stderr, "cant write entire file\n");
-  }
-  fclose(fp);
-}
-
-std::vector<uint8_t> blueprint_unpacker::readFile(string path) {
+std::vector<uint8_t> blueprint_unpacker::readFile(std::string path) {
   std::vector<uint8_t> data;
 
   FILE *fp = fopen(path.c_str(), "rb");

@@ -69,7 +69,7 @@ void writeFile(string path, string contents) {
     return;
   }
   int res = fwrite(contents.c_str(), 1, contents.size(), fp);
-  printf("res %d\n", res);
+//  printf("res %d\n", res);
   if (res != contents.size()) {
     fprintf(stderr, "cant write entire file\n");
   }
@@ -83,7 +83,7 @@ void writeFile(string path, std::vector<uint8_t> contents) {
     return;
   }
   int res = fwrite(contents.data(), 1, contents.size(), fp);
-  printf("res %d\n", res);
+//  printf("res %d\n", res);
   if (res != contents.size()) {
     fprintf(stderr, "cant write entire file\n");
   }
@@ -107,7 +107,7 @@ void change_charset_utf8() {
 void print_banner() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stdout, "║╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━╮╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stdout, "║╱╱┃╭━╮┃┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ┃╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stdout, "║╱╱┃╭━╮┃┃ ┃╱V1.1╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ┃╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱║\n");
     fprintf(stdout, "║╱╱┃╰━╯╰┫ ┃╭━╮ ╭━┳━━━┳━━━┳━━━┳━┳━━━━┻╮ ╭╯╱╱╱┃ ┃╱╱┃ ┣━━━━━┳━━━┳━━━━━┳━━━┫ ┃ ╭┳━━━┳━━╮╱╱║\n");
     fprintf(stdout, "║╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃ ━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┃ ┃╱╱╱╱┃ ┃╱╱┃ ┃ ╭━╮ ┃╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┃ ━━┫ ╭╯╱╱║\n");
     fprintf(stdout, "║╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃ ━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ╰━━╯ ┃ ┃ ┃ ┃╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┃ ━━┫ ┃╱╱╱║\n");
@@ -119,7 +119,7 @@ void print_banner() {
 }
 void print_help() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
-    fprintf(stdout, "║ This tool takes \"blueprint\" data and converts it to the following types:            ║\n");
+    fprintf(stdout, "║ This tool takes a \"blueprint\" and converts it to the following types:             ║\n");
     fprintf(stdout, "║ Raw binary                         (direct rip from the image)                      ║\n");
     fprintf(stdout, "║ lz4 commpressed + user data        (compressed vehicle data and user data)          ║\n");
     fprintf(stdout, "║ protobuffer + user data            (raw vehicle structure data and user data)       ║\n");
@@ -199,9 +199,7 @@ int main(int argc, char *argv[]) {
       break;
     case 'D':
       dump_Description = true;
-      break;
-    case 'T':
-      unpacker.exportSteamToken(); // This is here cus i still like the feature but dont want it to be easily found
+
       break;
     case 'f':
       print_info = true;
@@ -290,6 +288,10 @@ int main(int argc, char *argv[]) {
       temp.append(unpacker.getTag());
       temp.append("\n\rCreator:\n");
       temp.append(unpacker.getCreator());
+      if (dump_UUID) {
+        temp.append("\n\rUUID:\n");
+        temp.append(unpacker.getCreator());
+      }
       temp.append("\n\rSteamToken\n");
       temp.append(unpacker.getSteamToken());
       temp.append("\n");

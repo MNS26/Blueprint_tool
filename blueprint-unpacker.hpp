@@ -1,5 +1,4 @@
 #include "trailmakers.pb.h"
-using namespace std;
 
 class blueprint_unpacker
 {
@@ -49,12 +48,9 @@ private:
   StructureGraphSaveDataProto sgsdp;
 
   int64_t decompress_data_internal(uint8_t* srcBuffer,size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize,size_t filled, size_t alreadyConsumed, LZ4F_dctx* dctx);
-  size_t decompress_file_allocDst(uint8_t *srcBuffer, size_t srcBufferSize,uint8_t *dstBuffer, size_t dstBufferSize, LZ4F_dctx *dctx);
 
   long fsize(FILE *fp);
-  void writeFile(string path, string contents);
-  void writeFile(string path, std::vector<uint8_t> contents);
-  std::vector<uint8_t> readFile(string path);
+  std::vector<uint8_t> readFile(std::string path);
   void extractFromImage(const unsigned char *image_data, int width, int height);
 
   void extractVehicle();
@@ -82,7 +78,7 @@ public:
   inline std::string getDescription() {return Description;}
   inline std::string getTag() {return Tag;}
   inline std::string getCreator() {return Creator;}
-  inline std::string getSteamToken() const {return enableSteamToken ? SteamToken : "00000000-0000-0000-0000-000000000000";} // yes... it will be in the code but not in the help window
+  inline std::string getSteamToken() const {return enableSteamToken ? SteamToken : "-----------------";} // yes... it will be in the code but not in the help window
   
   bool extractFromImage(std::string filepath);
   bool extractFromBinary(std::string filepath);

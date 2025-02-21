@@ -35,14 +35,8 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "google/protobuf/util/time_util.h"
-#include "google/protobuf/util/json_util.h"
-#include "trailmakers.pb.h"
 #include "blueprint-repacker.hpp"
-using namespace std;
-//using namespace google::protobuf;
-//using google::protobuf::util::TimeUtil;
-StructureGraphSaveDataProto sgsdp;
+
 
 
 long fsize(FILE *fp){
@@ -70,39 +64,37 @@ void change_charset_utf8() {
 void print_banner() {
     fprintf(stderr, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stderr, "║╱╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━━━━━━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱┃╭━╮┃┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ╭━━╮ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱┃╭━╮┃┃ ┃╱V0.0╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ╭━━╮ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╰━╯╰┫ ┃╭━╮ ╭━┳━━━┳━━━┳━━━┳━┳━━━━┻╮ ╭╯╱╱╱┃ ╰━━╯ ┣━━━┳━━━┳━━━━━┳━━━┫ ┃ ╭┳━━━┳━━╮╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃ ━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┫ ┃╱╱╱╱┃ ╭━╮ ╭┫ ━━┫╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┫ ━━┫ ╭╯╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃ ━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ┃ ╰╮╰┫ ━━┫╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┫ ━━┫ ┃╱╱╱╱║\n");
     fprintf(stderr, "║╱╱╱╰━━━━┻━━┻━━━━━┻━━━┫ ╭━┻━╯ ╰━┻━╯ ╰━┻━━╯╱╱╱╰━╯  ╰━┻━━━┫ ╭━┻━╯ ╰━┻━━━┻━╯ ╰┻━━━┻━╯╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱Made by: Noah (MS26)╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃ Made by:  Noah  Clever ╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
     fprintf(stderr, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 
 }
 
 void print_help() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
-    fprintf(stdout, "║ This tool takes \"blueprint\" data and converts it in to a image file:                ║\n");
-    fprintf(stdout, "║                                                                                     ║\n");
-    fprintf(stdout, "║                                                                                     ║\n");
-    fprintf(stdout, "║                                                                                     ║\n");
-    fprintf(stdout, "║                                                                                     ║\n");
+    fprintf(stdout, "║ This tool takes raw \"blueprint\" data and converts it in to a image file:            ║\n");
+    fprintf(stdout, "║ When using a text file make sure its formatted the same as the export tool          ║\n");
+    fprintf(stdout, "║ Surround strings with (\") when not using a text file and have spaces in them        ║\n");
+    fprintf(stdout, "║ If any of the fields are left empty they will be filled with default values         ║\n");
     fprintf(stdout, "╠═════════════════════════════════════════════════════════════════════════════════════╣\n");
     fprintf(stdout, "║ The following options are available                                                 ║\n");
     fprintf(stdout, "║                                                                                     ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
-    fprintf(stdout, "║ -                                                                                   ║\n");
+    fprintf(stdout, "║ -h/-H              shows this help screen                                           ║\n");
+    fprintf(stdout, "║ -p <path>          path to png input file                                           ║\n");
+    fprintf(stdout, "║ -j <path>          path to Json file                                                ║\n");
+    fprintf(stdout, "║ -f <path>          path to Text file for Title, Description, Tag, Creator, UUID ... ║\n");
+    fprintf(stdout, "║ -t <Title>         Title of the creation (single line)                              ║\n");
+    fprintf(stdout, "║ -d <Description>   Description of the creation (single line)                        ║\n");
+    fprintf(stdout, "║ -T <Tag>                                                                            ║\n");
+    fprintf(stdout, "║ -c <Creator>                                                                        ║\n");
+    fprintf(stdout, "║ -u <UUID>                                                                           ║\n");
+//    fprintf(stdout, "║ -s <SteamToken>                                                                     ║\n");
+    fprintf(stdout, "║ -o <path>                                                                           ║\n");
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
 
@@ -115,46 +107,44 @@ int main(int argc, char *argv[]) {
   print_banner();
 
   int opt;
-  string in_path;
-  string in_type;
+  std::string inPathPng;
+  std::string inPathJson;
+  std::string inPathText;
+  std::string Vehicle;
+  std::string Uuid;
+  std::string Title;
+  std::string Description;
+  std::string Tag;
+  std::string Creator;
+  std::string SteamToken;
 
-  string out_path;
-  string out_type;
+  std::string out_path;
 
-  while ((opt = getopt(argc, argv, "b:l:j:P:i:I:o:u:U:d:D:hH")) != -1) {
+  while ((opt = getopt(argc, argv, "p:j:f:t:d:T:c:u:s:o:hH")) != -1) {
     switch (opt) {
-    case 'b':
-      in_path = optarg;
-      in_type = "binary";
-      break;
-    case 'l':
-      in_path = optarg;
-      in_type = "lz4";
+    case 'p':
+      fprintf(stdout, "%s\n",optarg);
+      inPathPng = optarg;
       break;
     case 'j':
-      in_path = optarg;
-      in_type = "json";
+      inPathJson = optarg;
       break;
-    case 'P':
-      in_path = optarg;
-      in_type = "protobuf";
+    case 'f':
+      inPathText = optarg;
       break;
-    case 'i':
-      in_path = optarg;
+    case 't':
       break;
-    case 'I':
-      in_type = optarg;
+    case 'd':
+      break;
+    case 'T':
+      break;
+    case 'c':
+      break;
+    case 'u':
+      break;
+    case 's':
       break;
     case 'o':
-      out_path = optarg;
-      break;
-    case 'u': // UUID string
-      break;
-    case 'U': // path to a UUID text file
-      break;
-    case 'd': // description string
-      break;
-    case 'D': // path to a description text file
       break;
     case 'H':
     case 'h':
@@ -163,8 +153,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (in_path.empty() || out_path.empty()) {
-    print_help();
+  if (inPathPng.empty() || out_path.empty()) {
+//    print_help();
     return EXIT_SUCCESS;
   }
 

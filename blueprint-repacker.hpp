@@ -1,32 +1,76 @@
 #include "trailmakers.pb.h"
-using namespace std;
 
 class blueprint_repacker
 {
-public:
-  uint8_t offset_header = 98;
-  uint8_t CreatorNameSize = 0;
-  uint32_t SaveGameVersion = 0;
-  bool leagacy_file = false;
-  uint32_t legacy_protobuf_size = 0;
-  uint32_t lz4_size = 0;
-  uint32_t smaz_size = 0;
-  uint32_t uuid_id_size = 0;
-  bool legacy_with_uuid = false;
-  bool has_header = false;
+private:
+
+  typedef struct {
+    int error;
+    unsigned long long size_in;
+    unsigned long long size_out;
+  } compressResult_t;
+
+  StructureGraphSaveDataProto sgsdp;
+
+  bool CustomSteamToken = false;
 
   uint8_t TitleMarker = 0x31;
   uint8_t DescriptionMarker = 0x12;
   uint8_t TagMarker = 0x1A;
   uint8_t CreatorMarker = 0x22; // marker in test form (\")
   uint8_t SteamTokenMarker = 0x2A; // marker in test form (or)
-
-private:
-
-  std::vector<uint8_t> binary;
-  std::vector<uint8_t> lz4Data;
-  std::vector<uint8_t> protobuf;
-  std::vector<uint8_t> smaz;
+  std::vector<std::string> Tags = {
+    "",
+    "Airplane",
+    "Airship",
+    "Animal",
+    "Boat",
+    "Car",
+    "Combat",
+    "Fan Art",
+    "Helicopter",
+    "Hovercraft",
+    "Immobile",
+    "Motorcycle",
+    "Space",
+    "Submarine",
+    "Transformer",
+    "Walker",
+    "Weekly Challenge"
+  };
+  /**
+   * Header bullshit
+   */
+  std::array<uint8_t, 116> data1 = {
+    0x00, 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+    0x00, 0x0C, 0x02, 0x00, 0x00, 0x00, 0x46, 0x41, 0x73, 0x73, 0x65, 0x6D, 0x62, 0x6C, 0x79, 0x2D, 
+    0x43, 0x53, 0x68, 0x61, 0x72, 0x70, 0x2C, 0x20, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x3D, 
+    0x30, 0x2E, 0x30, 0x2E, 0x30, 0x2E, 0x30, 0x2C, 0x20, 0x43, 0x75, 0x6C, 0x74, 0x75, 0x72, 0x65, 
+    0x3D, 0x6E, 0x65, 0x75, 0x74, 0x72, 0x61, 0x6C, 0x2C, 0x20, 0x50, 0x75, 0x62, 0x6C, 0x69, 0x63, 
+    0x4B, 0x65, 0x79, 0x54, 0x6F, 0x6B, 0x65, 0x6E, 0x3D, 0x6E, 0x75, 0x6C, 0x6C, 0x05, 0x01, 0x00, 
+    0x00, 0x00, 0x11, 0x53, 0x61, 0x76, 0x65, 0x47, 0x61, 0x6D, 0x65, 0x49, 0x6E, 0x50, 0x4E, 0x47, 
+    0x49, 0x6E, 0x66, 0x6F, 
+  };
+  uint32_t SaveGameVersion = 5;
+  std::array<uint8_t, 115> data2 = {
+    0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6F, 0x6E, 0x07, 0x63, 0x72, 0x65, 0x61, 0x74, 0x6F, 0x72, 
+    0x11, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x42, 0x79, 0x74, 0x65, 0x53, 0x69, 
+    0x7A, 0x65, 0x17, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x49, 0x64, 0x65, 0x6E, 
+    0x74, 0x69, 0x66, 0x69, 0x65, 0x72, 0x53, 0x69, 0x7A, 0x65, 0x15, 0x73, 0x74, 0x72, 0x75, 0x63, 
+    0x74, 0x75, 0x72, 0x65, 0x4D, 0x65, 0x74, 0x61, 0x42, 0x79, 0x74, 0x65, 0x53, 0x69, 0x7A, 0x65, 
+    0x00, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x08, 0x08, 0x08, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 
+    0x00, 0x06, 0x03, 0x00, 0x00, 0x00, 0x0C, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
+    0x20, 0x20, 0x20, 
+  };
+  uint32_t VehicleSize = 0;
+  uint32_t UuidSize = 0;
+  uint32_t SmazSize = 0;
+  uint8_t *VehicleSizePtr = NULL;
+  uint8_t *UuidSizePtr = NULL;
+  uint8_t *SmazSizePtr = NULL;
+  std::array<uint8_t, 2> data3 = {
+    0x0B, 0x00, 
+  };
   std::string Vehicle;
   std::string UUID;
   std::string Title;
@@ -34,38 +78,42 @@ private:
   std::string Tag;
   std::string Creator;
   std::string SteamToken;
+  std::string VehicleText;
+  
+  static LZ4F_preferences_t kPrefs;
+  
+  std::vector<uint8_t> protobuf;
+  std::vector<uint8_t> lz4Data;
 
-  size_t binarySize = 0;
-  size_t lz4DataLength = 0;
-  size_t ProtobufLength = 0;
-  size_t smazLength = 0;  
-  size_t VehicleLength = 0;
-  size_t UUIDLength = 0;
-  uint8_t TitleLength = 0;
-  size_t DescriptionLength = 0;
-  size_t CreatorLength = 0;
+  std::vector<uint8_t> binary;
+  std::vector<uint8_t> smaz;
+  uint8_t *buffptr= NULL;
+  uint32_t filledBytes = 0;
+
   int ImgWidth = 0;
   int ImgHeight = 0;
   int ImgChannels = 4;
   StructureGraphSaveDataProto sgsdp;
   bool CreateFakeHeader();
   bool CompressToProto();
-  bool CompressToLz4();
+  void CompressToLz4();
+  compressResult_t compress_internal(LZ4F_compressionContext_t ctx,int chunk);
   bool GenerateUuid();
   bool GenerateSmaz();
-  std::vector<uint8_t> readFile(string path);
-
-
+  bool GenerateBinary();
+  bool GenerateImage();
+  
 public:
-  bool GetImage(std::string filepath);
-  bool GetJson(std::string filepath);
-  bool GetTitleDescriptionTagCreatorToken(std::string filepath); // does the same as all the other calls but atomated from a text file
-  bool GetTitle(std::string text);
-  bool GetDescription(std::string text);
-  bool GetTag(std::string text);
-  bool GetCreator(std::string text);
-  bool GetToken(std::string text);
+  void setVehicleData();
+  void setTextDataFromFile();
+  void setVehicleTitle();
+  void setVehicleDescription();
+  void setVehicleTag();
+  void setVehicleCreator();
+  void setVehicleUuid();
+  void setVehicleSteamToken();
+  bool GenerateBlueprint();
 
-  blueprint_repacker(/* args */);
+  blueprint_repacker(/* args */bool enableCustomSteamToken = false);
   ~blueprint_repacker();
 };

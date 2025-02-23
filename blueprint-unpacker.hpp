@@ -78,6 +78,7 @@ public:
   inline std::string getDescription() {return Description;}
   inline std::string getTag() {return Tag;}
   inline std::string getCreator() {return Creator;}
+  inline std::string getUuid() {return UUID;}
   inline std::string getSteamToken() const {return enableSteamToken ? SteamToken : "-----------------";} // yes... it will be in the code but not in the help window
   
   bool extractFromImage(std::string filepath);

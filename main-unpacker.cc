@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
       temp.append(unpacker.getCreator());
       if (dump_UUID) {
         temp.append("\n\rUUID:\n");
-        temp.append(unpacker.getCreator());
+        temp.append(unpacker.getUuid());
       }
       temp.append("\n\rSteamToken\n");
       temp.append(unpacker.getSteamToken());

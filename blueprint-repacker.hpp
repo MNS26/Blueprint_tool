@@ -4,13 +4,13 @@ class blueprint_repacker
 {
 private:
 
-  typedef struct {
-    int error;
-    unsigned long long size_in;
-    unsigned long long size_out;
-  } compressResult_t;
+//  typedef struct {
+//    int error;
+//    unsigned long long size_in;
+//    unsigned long long size_out;
+//  } compressResult_t;
 
-  StructureGraphSaveDataProto sgsdp;
+//  StructureGraphSaveDataProto sgsdp;
 
   bool CustomSteamToken = false;
 
@@ -80,7 +80,7 @@ private:
   std::string SteamToken;
   std::string VehicleText;
   
-  static LZ4F_preferences_t kPrefs;
+//  static const LZ4F_preferences_t kPrefs;
   
   std::vector<uint8_t> protobuf;
   std::vector<uint8_t> lz4Data;
@@ -97,7 +97,7 @@ private:
   bool CreateFakeHeader();
   bool CompressToProto();
   void CompressToLz4();
-  compressResult_t compress_internal(LZ4F_compressionContext_t ctx,int chunk);
+  //compressResult_t compress_internal(LZ4F_compressionContext_t ctx,int chunk);
   bool GenerateUuid();
   bool GenerateSmaz();
   bool GenerateBinary();

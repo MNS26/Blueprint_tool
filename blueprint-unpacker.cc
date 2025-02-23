@@ -164,8 +164,8 @@ void blueprint_unpacker::decompress_smaz() {
   size_t offset = 0;
   
   std::vector<uint8_t> tempString;
-  tempString.resize(1024);
-  tempString.resize(smaz_decompress((char*)smazData.data()+1,smazData.capacity(),(char*)tempString.data(),tempString.capacity()));
+  tempString.resize(smazLength*2);
+  smaz_decompress((char*)smazData.data()+1,smazData.capacity(),(char*)tempString.data(),tempString.capacity());
 
   
   LEB128 = getSmazLEB(tempString.data(), consumedBytes, offset);
@@ -179,19 +179,28 @@ void blueprint_unpacker::decompress_smaz() {
 
 
   offset = get_index_of(tempString.data(), tempString.size(), TagMarker, offset+Description.size());
-  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
-  Tag.resize(LEB128);
-  Tag.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
+  auto a = (tempString.data()+offset+1);
+  Tag.resize(*a);
+  Tag.assign((char*)(tempString.data()+offset+1),*a);
+//  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
+//  Tag.resize(LEB128);
+//  Tag.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
   offset = get_index_of(tempString.data(), tempString.size(), CreatorMarker, offset+Tag.size());
-  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
-  Creator.resize(LEB128);
-  Creator.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
+  a = (tempString.data()+offset+1);
+  Creator.resize(*a);
+  Creator.assign((char*)(tempString.data()+offset+2),*a);
+//  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
+//  Creator.resize(LEB128);
+//  Creator.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
   offset = get_index_of(tempString.data(), tempString.size(), SteamTokenMarker, offset+Creator.size());
-  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
-  SteamToken.resize(LEB128);
-  SteamToken.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
+  a = (tempString.data()+offset+1);
+  SteamToken.resize(*a);
+  SteamToken.assign((char*)(tempString.data()+offset+2),*a);
+//  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
+//  SteamToken.resize(LEB128);
+//  SteamToken.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
 
   tempString.clear();

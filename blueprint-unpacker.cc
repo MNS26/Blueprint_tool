@@ -246,7 +246,6 @@ void blueprint_unpacker::extractVehicle() {
   VehicleData = std::vector<uint8_t>(binaryData.begin() + offset_header, binaryData.begin() + offset_header + VehicleLength);
 }
 void blueprint_unpacker::parse() {
-
     // those are only possible if we get the raw bin file or the entire PNG
     if (has_header) {
       offset_header += binaryData[offset_header]+1;         // SaveGamePNG size + own byte (17+1)
@@ -274,8 +273,8 @@ void blueprint_unpacker::parse() {
         offset_header += 2; // jump 2 forward 
 
       } else {
-        legacy_protobuf_size = *(uint32_t*)(binaryData.data()+offset_header); // get legacy protobuf size
-        offset_header += sizeof(legacy_protobuf_size); // shift over by 4
+        VehicleLength = *(uint32_t*)(binaryData.data()+offset_header); // get legacy protobuf size
+        offset_header += sizeof(VehicleLength); // shift over by 4
         offset_header += 3; // shift over by 3 (this lines up with protobuf @0xc0)
       }
       if(VehicleLength)
@@ -292,8 +291,8 @@ void blueprint_unpacker::parse() {
       protobufData.resize(MAX_LZ4_DECOMPRESSED_SIZE);
       protobufData.resize(decompress_lz4(VehicleData.data(), VehicleData.size(), protobufData.data(), protobufData.size()));
     }else {
-      fprintf(stdout, "Updated legacy Blueprint Detected.\n");
-      fprintf(stdout, "This file has no LZ4 magic header\n");
+      fprintf(stdout, "This Blueprint has no LZ4 magic header\n");
+      fprintf(stdout, "Asumming it has Protobuf instead\n");
       protobufData = std::vector<uint8_t>(VehicleData);
     }
     decompress_protobuf();

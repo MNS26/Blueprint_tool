@@ -1,16 +1,26 @@
 #include "trailmakers.pb.h"
+#include <lz4.h>
+#include <lz4frame.h>
+#include <lz4frame_static.h>
 
 class blueprint_repacker
 {
 private:
 
-//  typedef struct {
-//    int error;
-//    unsigned long long size_in;
-//    unsigned long long size_out;
-//  } compressResult_t;
-
-//  StructureGraphSaveDataProto sgsdp;
+  typedef struct {
+    int error;
+    unsigned long long size_in;
+    unsigned long long size_out;
+  } compressResult_t;
+  LZ4F_preferences_t kPrefs = {
+    { LZ4F_max256KB, LZ4F_blockLinked, LZ4F_noContentChecksum, LZ4F_frame,
+      0 /* unknown content size */, 0 /* no dictID */ , LZ4F_noBlockChecksum },
+    0,   /* compression level; 0 == default */
+    0,   /* autoflush */
+    0,   /* favor decompression speed */
+    { 0, 0, 0 },  /* reserved, must be set to 0 */
+  };
+  StructureGraphSaveDataProto sgsdp;
 
   bool CustomSteamToken = false;
 
@@ -20,7 +30,7 @@ private:
   uint8_t CreatorMarker = 0x22; // marker in test form (\")
   uint8_t SteamTokenMarker = 0x2A; // marker in test form (or)
   std::vector<std::string> Tags = {
-    "",
+    "", //Untagged
     "Airplane",
     "Airship",
     "Animal",
@@ -72,15 +82,14 @@ private:
     0x0B, 0x00, 
   };
   std::string Vehicle;
-  std::string UUID;
+  std::vector<uint8_t> UUID;
   std::string Title;
   std::string Description;
   std::string Tag;
   std::string Creator;
   std::string SteamToken;
   std::string VehicleText;
-  
-//  static const LZ4F_preferences_t kPrefs;
+  uint8_t UuidMarker= 0x08;
   
   std::vector<uint8_t> protobuf;
   std::vector<uint8_t> lz4Data;
@@ -93,19 +102,18 @@ private:
   int ImgWidth = 0;
   int ImgHeight = 0;
   int ImgChannels = 4;
-  StructureGraphSaveDataProto sgsdp;
+
   bool CreateFakeHeader();
   bool CompressToProto();
   void CompressToLz4();
-  //compressResult_t compress_internal(LZ4F_compressionContext_t ctx,int chunk);
-  bool GenerateUuid();
-  bool GenerateSmaz();
-  bool GenerateBinary();
-  bool GenerateImage();
+  compressResult_t compress_internal(LZ4F_compressionContext_t ctx,int chunk);
+  void GenerateUuid();
+  void GenerateSmaz();
+  void GenerateImage();
   
 public:
   void setVehicleData();
-  void setTextDataFromFile();
+  void setTextFromFile();
   void setVehicleTitle();
   void setVehicleDescription();
   void setVehicleTag();

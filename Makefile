@@ -35,9 +35,9 @@ smaz: smaz.cc
 #$(pkg-config protobuf --libs) -llz4 -lprotobuf-c -lprotoc
 
 blueprint-packer.o: blueprint-packer.cc trailmakers.pb.h
-blueprint-repacker.o: blueprint-repacker.cc trailmakers.pb.h
+blueprint-repacker.o: blueprint-repacker.cc stb/stb_image.h stb/stb_image_write.h smaz.h blueprint-repacker.hpp trailmakers.pb.h
 blueprint-unpacker.o: blueprint-unpacker.cc stb/stb_image.h smaz.h blueprint-unpacker.hpp trailmakers.pb.h
-main-repacker.o: main-repacker.cc
+main-repacker.o: main-repacker.cc smaz.h blueprint-unpacker.hpp trailmakers.pb.h
 main-unpacker.o: main-unpacker.cc smaz.h blueprint-unpacker.hpp trailmakers.pb.h
 smaz.o: smaz.cc
 trailmakers.pb.o: trailmakers.pb.cc

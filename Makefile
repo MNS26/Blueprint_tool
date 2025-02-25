@@ -4,6 +4,7 @@ CFLAGS := -DNDEBUG -g -Wall -Ilib/lz4/
 
 ifeq ($(WINDOWS), 1)
   EXT := .exe
+	LIBS += -lrpcrt4
 else
   LIBS += `$(PKG_CONFIG) --libs protobuf` -luuid
 endif

@@ -1,11 +1,11 @@
 PKG_CONFIG ?= pkg-config
-LIBS := -lprotobuf -lprotobuf-lite
+LIBS := -lprotobuf -lprotobuf-lite 
 CFLAGS := -DNDEBUG -g -Wall -Ilib/lz4/
 
 ifeq ($(WINDOWS), 1)
   EXT := .exe
 else
-  LIBS += `$(PKG_CONFIG) --libs protobuf`
+  LIBS += `$(PKG_CONFIG) --libs protobuf` -luuid
 endif
 
 all: blueprint-unpacker blueprint-repacker

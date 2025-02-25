@@ -23,9 +23,17 @@
 extern "C"
 {
 #ifdef _WIN32
-//#include <Rpc.h>
+#pragma comment(lib, "Rpcrt4.lib")
+#define _WIN32_WINNT 0x0A00
+#define WIN32_LEAN_AND_MEAN
+#define NOGDI
+#if !defined(_MAC) || defined(_WIN32NLS)
+#include <winnls.h>
+#endif
+#include <rpc.h>
+#include <rpcdce.h>
 #else
-//#include <uuid/uuid.h>
+#include <uuid/uuid.h>
 #endif
 }
 
@@ -43,7 +51,7 @@ blueprint_repacker::~blueprint_repacker() {
 	protobuf.clear();
 	smaz.clear();
 	Vehicle.clear();
-	UUID.clear();
+	Uuid.clear();
 	Title.clear();
 	Description.clear();
   Tag.clear();
@@ -231,28 +239,35 @@ blueprint_repacker::compressResult_t blueprint_repacker::compress_internal(LZ4F_
 }
 
 void blueprint_repacker::GenerateUuid() {
-// IDK OF ANY WINDOWS LIB TO DO VALID UUID GEN
+// IDK OF ANY WINDOWS LIB TO DO VALID Uuid GEN
 // OR HOW TO ADD IT TO NIX
 
-//#ifdef _WIN32
-  UUID.reserve(15);
-  UUID[0]= UuidMarker;
-  UUID[1] = 0x05; // marker for using legacy option
-  UUID[2] = 0x12;
-  UUID[3] = 0x0B; // Rand of 11 large (10 excluding the "-")
-  UUID[4] = 0x2D;
-  for (int i = 0; i < (UUID[3]-1);i++)
-    UUID[i+4] = (uint8_t)(rand()%0xFF);
-  memset(UuidSizePtr,(uint32_t)UUID.capacity(),sizeof(uint32_t));
-//#else
-//  UUID.reserve(40);
-//  UUID[0]= UuidMarker;
-//  UUID[1] = 0x02; // marker for using UUID
-//  UUID[2] = 0x12;
-//  UUID[3] = 0x24; // UUID length is 36
-//  uuid_generate(UUID.data()+4);
-//  memset(UuidSizePtr,(uint32_t)UUID.capacity(),sizeof(uint32_t));
-//#endif
+
+  Uuid.reserve(40);
+  Uuid[0]= UuidMarker;
+  Uuid[1] = 0x02; // marker for using Uuid
+  Uuid[2] = 0x12;
+  Uuid[3] = 0x24; // Uuid length is 36
+#ifdef _WIN32
+  UUID uuid;
+  RPC_CSTR uuidString = NULL;
+  UuidCreate(&uuid);
+  UuidToStringA(&uuid, &uuidString);
+  memcpy(Uuid.data()+4,&uuidString,Uuid[3]);
+//  Uuid.reserve(15);
+//  Uuid[0]= UuidMarker;
+//  Uuid[1] = 0x05; // marker for using legacy option
+//  Uuid[2] = 0x12;
+//  Uuid[3] = 0x0B; // Rand of 11 large (10 excluding the "-")
+//  Uuid[4] = 0x2D;
+//  for (int i = 0; i < (Uuid[3]-1);i++)
+//    Uuid[i+4] = (uint8_t)(rand()%0xFF);
+//  memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
+#else
+  uuid_generate(Uuid.data()+4);
+//  memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
+#endif
+  memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
 }
 
 void blueprint_repacker::GenerateSmaz() {}

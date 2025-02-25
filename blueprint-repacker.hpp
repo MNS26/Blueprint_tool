@@ -82,7 +82,7 @@ private:
     0x0B, 0x00, 
   };
   std::string Vehicle;
-  std::vector<uint8_t> UUID;
+  std::vector<uint8_t> Uuid;
   std::string Title;
   std::string Description;
   std::string Tag;

@@ -23,7 +23,6 @@
 extern "C"
 {
 #ifdef _WIN32
-#pragma comment(lib, "Rpcrt4.lib")
 #define _WIN32_WINNT 0x0A00
 #define WIN32_LEAN_AND_MEAN
 #define NOGDI
@@ -57,6 +56,25 @@ blueprint_repacker::~blueprint_repacker() {
   Tag.clear();
 	Creator.clear();
   SteamToken.clear();
+}
+
+
+
+std::size_t blueprint_repacker::WriteUleb128(std::vector<char>& dest, unsigned long val) {
+  std::size_t count = 0;
+  std::vector<char> leb;
+  //leb.resize(8);
+  do {
+    unsigned char byte = val & 0x7f;
+    val >>= 7;
+
+    if (val != 0)
+      byte |= 0x80;  // mark this byte to show that more bytes will follow
+
+    dest.push_back(byte);
+    count++;
+  } while (val != 0);
+  return count;
 }
 
 // filling up the initial header with a replica of a real file
@@ -239,38 +257,99 @@ blueprint_repacker::compressResult_t blueprint_repacker::compress_internal(LZ4F_
 }
 
 void blueprint_repacker::GenerateUuid() {
-// IDK OF ANY WINDOWS LIB TO DO VALID Uuid GEN
-// OR HOW TO ADD IT TO NIX
-
-
   Uuid.reserve(40);
   Uuid[0]= UuidMarker;
   Uuid[1] = 0x02; // marker for using Uuid
-  Uuid[2] = 0x12;
+  Uuid[2] = 0x12; // IDK... just doing the same as pulled from the game generated file
   Uuid[3] = 0x24; // Uuid length is 36
 #ifdef _WIN32
   UUID uuid;
-  RPC_CSTR uuidString = NULL;
+  unsigned char *uuidString = NULL;
   UuidCreate(&uuid);
   UuidToStringA(&uuid, &uuidString);
   memcpy(Uuid.data()+4,&uuidString,Uuid[3]);
-//  Uuid.reserve(15);
-//  Uuid[0]= UuidMarker;
-//  Uuid[1] = 0x05; // marker for using legacy option
-//  Uuid[2] = 0x12;
-//  Uuid[3] = 0x0B; // Rand of 11 large (10 excluding the "-")
-//  Uuid[4] = 0x2D;
-//  for (int i = 0; i < (Uuid[3]-1);i++)
-//    Uuid[i+4] = (uint8_t)(rand()%0xFF);
-//  memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
 #else
   uuid_generate(Uuid.data()+4);
-//  memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
 #endif
   memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
 }
 
-void blueprint_repacker::GenerateSmaz() {}
+void blueprint_repacker::GenerateSmaz() {
+  uint8_t smazBuffOffset = 0;
+  std::vector<char> GiantAssString;
+  int GiantAssStringOffset = 0;
+
+  GiantAssStringOffset += WriteUleb128(GiantAssString, Title.length());
+  for(int i=0; i<Title.length();i++)
+    GiantAssString.push_back(Title[i]);
+
+  GiantAssString.push_back(DescriptionMarker);
+  GiantAssStringOffset += WriteUleb128(GiantAssString, Description.length());
+  for(int i=0; i<Description.length();i++)
+    GiantAssString.push_back(Description[i]);
+
+  GiantAssString.push_back(TagMarker);
+  GiantAssStringOffset += WriteUleb128(GiantAssString, Tag.length());
+  for(int i=0; i<Tag.length();i++)
+    GiantAssString.push_back(Tag[i]);
+
+  GiantAssString.push_back(CreatorMarker);
+  GiantAssStringOffset += WriteUleb128(GiantAssString, Creator.length());
+  for(int i=0; i<Creator.length();i++)
+    GiantAssString.push_back(Creator[i]);
+
+  GiantAssString.push_back(SteamTokenMarker);
+  GiantAssStringOffset += WriteUleb128(GiantAssString, SteamToken.length());
+  for(int i=0; i<SteamToken.length();i++)
+    GiantAssString.push_back(SteamToken[i]);
+
+  GiantAssString.shrink_to_fit();
+  std::vector<char> test;
+  test.resize(GiantAssString.capacity()+10);
+  smaz.resize(4096);
+  smaz[0] = 0x31;
+
+//  _smaz_compress(GiantAssString.data(),GiantAssString.capacity(),smaz.data()+1,smaz.capacity()-1);
+//  smaz_decompress(smaz.data()+1,smaz.capacity()-1,test.data(),test.capacity());
+//  test.clear();
+  smazBuffOffset += smaz_compress(GiantAssString.data(),GiantAssString.capacity(),smaz.data()+1,smaz.capacity()-1);
+  smaz_decompress(smaz.data()+1,smaz.capacity()-1,test.data(),test.capacity());
+  smaz.shrink_to_fit();
+  fprintf(stdout,"Test: ",smaz.data());
+  for (size_t i = 0; i < smaz.capacity(), i++;)
+    fprintf(stdout," \\x%02x", (unsigned char)smaz[i]);
+  fprintf(stdout,"\n");
+  
+}
+
+void blueprint_repacker::setImageData(std::string filepath) {
+  	auto imgData = stbi_load(filepath.c_str(), &ImgWidth, &ImgHeight, &ImgChannels, 4);
+
+}
+
+void blueprint_repacker::setVehicleTitle(std::string title) {
+  Title.assign(title);
+}
+
+void blueprint_repacker::setVehicleDescription(std::string description) {
+  Description.assign(description);
+}
+
+void blueprint_repacker::setVehicleTag(std::string tag) {
+  Tag.assign(tag);
+}
+
+void blueprint_repacker::setVehicleCreator(std::string creator) {
+  Creator.assign(creator);
+}
+
+void blueprint_repacker::setVehicleUuid(std::string uuid) {
+//  Uuid.assign(uuid);
+}
+
+void blueprint_repacker::setVehicleSteamToken(std::string token) {
+  SteamToken.assign(token);
+}
 
 bool blueprint_repacker::GenerateBlueprint() { 
 	

@@ -37,7 +37,7 @@
 #include <string>
 #include "blueprint-repacker.hpp"
 
-
+blueprint_repacker repacker;
 
 long fsize(FILE *fp){
     long prev=ftell(fp);
@@ -105,6 +105,7 @@ int main(int argc, char *argv[]) {
   change_charset_utf8();
 #endif
   print_banner();
+      repacker._TEST();
 
   int opt;
   std::string inPathPng;

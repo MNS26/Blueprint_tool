@@ -1,84 +1,128 @@
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <stdint.h>
+#include <cstdint>
+#include <ctime>
+#include <ostream>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
 #include "smaz.h"
 
-int smaz_compress(char *in, int inlen, char *out, int outlen) {
-  unsigned int h1 = 0;
-  unsigned int h2 = 0;
-  unsigned int h3 = 0;
-  int verblen = 0, _outlen = outlen;
-  char verb[256], *_out = out;
 
-  while(inlen) {
-    int j = 7, needed;
-    char *flush = NULL;
-    const char *slot;
+/* compression codebook, used for decompression/compression  */
+static const char *Smaz_rcb[254] = {
+/*0  */ " "    ,"the" ,"e"  ,"t"    ,"a"  ,"of"  ,"o"   ,"and"    ,"i"     ,"n"  ,
+/*10 */ "s"    ,"e "  ,"r"  ," th"  ," t" ,"in"  ,"he"  ,"th"     ,"h"     ,"he ",
+/*20 */ "to"   ,"\r\n","l"  ,"s "   ,"d"  ," a"  ,"an"  ,"er"     ,"c"     ," o" ,
+/*30 */ "d "   ,"on"  ," of","re"   ,"of ","t "  ,", "  ,"is"     ,"u"     ,"at" ,
+/*40 */ "   "  ,"n "  ,"or" ,"which","f"  ,"m"   ,"as"  ,"it"     ,"that"  ,"\n" ,
+/*50 */ "was"  ,"en"  ,"  " ," w"   ,"es" ," an" ," i"  ,"\r"     ,"f "    ,"g"  ,
+/*60 */ "p"    ,"nd"  ," s" ,"nd "  ,"ed ","w"   ,"b"   ,"http://","for"   ,"te" ,
+/*70 */ "ing"  ,"y "  ,"The"," c"   ,"ti" ,"r "  ,"his" ,"st"     ," in"   ,"ar" ,
+/*80 */ "nt"   ,","   ," to","y"    ,"ng" ," h"  ,"with","le"     ,"al"    ,"to ",
+/*90 */ "b"    ,"ou"  ,"be" ,"were" ," b" ,"se"  ,"o "  ,"ent"    ,"ha"    ,"ng ",
+/*100*/ "their","\""  ,"hi" ,"from" ," f" ,"in " ,"de"  ,"ion"    ,"me"    ,"v"  ,
+/*110*/ "."    ,"ve"  ,"all","re "  ,"ri" ,"ro"  ,"is " ,"co"     ,"f t"   ,"are",
+/*120*/ "ea"   ,". "  ,"her"," m"   ,"er "," p"  ,"es " ,"by"     ,"they"  ,"di" ,
+/*130*/ "ra"   ,"ic"  ,"not","s, "  ,"d t","at " ,"ce"  ,"la"     ,"h "    ,"ne" ,
+/*140*/ "as "  ,"tio" ,"on ","n t"  ,"io" ,"we"  ," a " ,"om"     ,", a"   ,"s o",
+/*150*/ "ur"   ,"li"  ,"ll" ,"ch"   ,"had","this", "e t","g "     ,"e\r\n" ," wh",
+/*160*/ "ere"  ," co" ,"e o","a "   ,"us" ," d"  ,"ss"  ,"\n\r\n" ,"\r\n\r","=\"",
+/*170*/ " be"  ," e"  ,"s a","ma"   ,"one","t t" ,"or " ,"but"    ,"el"    ,"so" ,
+/*180*/ "l "   ,"e s" ,"s," ,"no"   ,"ter"," wa" ,"iv"  ,"ho"     ,"e a"   ," r" , 
+/*190*/ "hat"  ,"s t" ,"ns" ,"ch "  ,"wh" ,"tr"  ,"ut"  ,"/"      ,"have"  ,"ly ",
+/*200*/ "ta"   ," ha" ," on","tha"  ,"-"  ," l"  ,"ati" ,"en "    ,"pe"    ," re",
+/*210*/ "there","ass" ,"si" ," fo"  ,"wa" ,"ec"  ,"our" ,"who"    ,"its"   ,"z"  ,
+/*220*/ "fo"   ,"rs"  ,">"  ,"ot"   ,"un" ,"<"   ,"im"  ,"th "    ,"nc"    ,"ate",
+/*230*/  "><"  ,"ver" ,"ad" ," we"  ,"ly" ,"ee"  ," n"  ,"id"     ," cl"   ,"ac" ,
+/*240*/ "il"   ,"</"  ,"rt" ," wi"  ,"div","e, " ," it" ,"whi"    ," ma"   ,"ge" ,
+/*250*/ "x"    ,"e c" ,"men",".com"
+};
+// 0-9 A-Z jqk 
+// are not in the decoder
 
-    h1 = h2 = in[0]<<3;
-    if (inlen > 1) h2 += in[1];
-    if (inlen > 2) h3 = h2^in[2];
-    if (j > inlen) j = inlen;
+int smaz_compress(char* in, int inlen, char* out, int outlen) {
+  size_t in_idx = 0;
+  size_t out_idx = 0;
 
-    /* Try to lookup substrings into the hash table, starting from the
-     * longer to the shorter substrings */
-    for (; j > 0; j--) {
-      switch(j) {
-      case 1: slot = Smaz_cb[h1%241]; break;
-      case 2: slot = Smaz_cb[h2%241]; break;
-      default: slot = Smaz_cb[h3%241]; break;
+  while (in_idx <inlen) {
+    bool match_found = false;
+    size_t best_match_index =0; // Holds what index has largest match
+    size_t best_match_len = 0; // Holds what the longest match is so far
+    // Try matching Smaz_rcb entries
+    for (int i=0; i<254; i++) {
+      const char* pattern = Smaz_rcb[i];
+      size_t pat_len = strlen(pattern);
+
+      // Check if pattern matches
+      if (in_idx+pat_len <= inlen && strncmp(in+in_idx, pattern, pat_len)==0) {
+        // Match found
+        if (pat_len > best_match_len) {
+          best_match_len = pat_len;
+          best_match_index = i;
+        }
+        // We found 'a' match
+//        match_found = true;
       }
-      while(slot[0]) {
-        if (slot[0] == j && memcmp(slot+1,in,j) == 0) {
-          /* Match found in the hash table,
-           * prepare a verbatim bytes flush if needed */
-          if (verblen) {
-            needed = (verblen == 1) ? 2 : 2+verblen;
-            flush = out;
-            out += needed;
-            outlen -= needed;
+    }
+    if (best_match_len) {
+        // Write index for matched pattern
+        out[out_idx++] = (u_char)best_match_index;
+        in_idx += best_match_len; // advance by length
+    } else {
+      // No matches found, switching to literal
+      size_t literal_start = in_idx;
+      ssize_t literal_len = 0;
+
+      // Continue until we reach the end or find a match
+      while (in_idx < inlen) {
+        bool can_match = false;
+        for (int j=0; j<254; j++) {
+          const char* pattern = Smaz_rcb[j];
+          size_t pat_len = strlen(pattern);
+          if (in_idx+pat_len <= inlen && strncmp(in+in_idx, pattern, pat_len)==0) {
+            can_match = true;
+            break;
           }
-          /* Emit the byte */
-          if (outlen <= 0) return _outlen+1;
-          out[0] = slot[slot[0]+1];
-          out++;
-          outlen--;
-          inlen -= j;
-          in += j;
-          goto out;
-        } else {
-          slot += slot[0]+2;
+        }
+        if (can_match)
+          break;
+        // Otherwise add current character to literal
+        literal_len++;
+        in_idx++;
+      }
+
+      //Flush the literal, and segment over 255
+      if (literal_len == 1) {
+        // Single byte copy
+        out[out_idx++] = 254;
+        out[out_idx++] = in[literal_start];
+      } else {
+        // Multi byte copy
+        // Split up when more than 255
+        size_t pos = 0;
+        while (literal_len > 0) {
+          // Clamp to 255
+          u_char chunk = (literal_len > 255 ? 255 : literal_len);
+          out[out_idx++] = 255;
+          out[out_idx++] = chunk;
+          memcpy(out+out_idx, in+literal_start+pos, chunk);
+          out_idx+= chunk;
+          pos += chunk;
+          literal_len -= chunk;
         }
       }
     }
-    /* Match not found - add the byte to the verbatim buffer */
-    verb[verblen] = in[0];
-    verblen++;
-    inlen--;
-    in++;
-out:
-    /* Prepare a flush if we reached the flush length limit, and there
-     * is not already a pending flush operation. */
-    if (!flush && (verblen == 256 || (verblen > 0 && inlen == 0))) {
-      needed = (verblen == 1) ? 2 : 2+verblen;
-      flush = out;
-      out += needed;
-      outlen -= needed;
-      if (outlen < 0) return _outlen+1;
-    }
-    /* Perform a verbatim flush if needed */
-    if (flush) {
-      if (verblen == 1) {
-        flush[0] = (signed char)254;
-        flush[1] = verb[0];
-      } else {
-        flush[0] = (signed char)255;
-        flush[1] = (signed char)(verblen-1);
-        memcpy(flush+2,verb,verblen);
-      }
-        flush = NULL;
-        verblen = 0;
-    }
   }
-  return out-_out;
+  return out_idx;
 }
 
 
@@ -88,7 +132,7 @@ int smaz_decompress(char *in, int inlen, char *out, int outlen) {
   int _outlen = outlen;
 
   while(inlen) {
-    if (*c == 0xfe) {
+    if (*c == 254) {
       /* Verbatim byte */
       if (outlen < 1) return _outlen++;
       *out = *(c+1);
@@ -96,7 +140,7 @@ int smaz_decompress(char *in, int inlen, char *out, int outlen) {
       outlen--;
       c += 2;
       inlen -= 2;
-    } else if (*c == 0xff) {
+    } else if (*c == 255) {
       /* Verbatim string */
       int len = (*(c+1));
       if (outlen < len) return _outlen++;

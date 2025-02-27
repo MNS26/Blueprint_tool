@@ -95,13 +95,15 @@ private:
   std::vector<uint8_t> lz4Data;
 
   std::vector<uint8_t> binary;
-  std::vector<uint8_t> smaz;
+  std::vector<char> smaz;
   uint8_t *buffptr= NULL;
   uint32_t filledBytes = 0;
 
   int ImgWidth = 0;
   int ImgHeight = 0;
   int ImgChannels = 4;
+
+  std::size_t WriteUleb128(std::vector<char>& dest, unsigned long val);
 
   bool CreateFakeHeader();
   bool CompressToProto();
@@ -112,15 +114,25 @@ private:
   void GenerateImage();
   
 public:
-  void setVehicleData();
-  void setTextFromFile();
-  void setVehicleTitle();
-  void setVehicleDescription();
-  void setVehicleTag();
-  void setVehicleCreator();
-  void setVehicleUuid();
-  void setVehicleSteamToken();
+
+
+  void setImageData(std::string filepath);
+  void setVehicleData(std::string data);
+  void setVehicleTitle(std::string title);
+  void setVehicleDescription(std::string description);
+  void setVehicleTag(std::string tag);
+  void setVehicleCreator(std::string creator);
+  void setVehicleUuid(std::string uuid);
+  void setVehicleSteamToken(std::string token);
   bool GenerateBlueprint();
+  void _TEST() {
+    blueprint_repacker::setVehicleTitle("TEST");
+    blueprint_repacker::setVehicleDescription("test");
+    blueprint_repacker::setVehicleCreator("Noah");
+    blueprint_repacker::setVehicleSteamToken("76561198202006434");
+
+    blueprint_repacker::GenerateSmaz();
+    };
 
   blueprint_repacker(/* args */bool enableCustomSteamToken = false);
   ~blueprint_repacker();

@@ -187,7 +187,7 @@ void blueprint_repacker::CreateUuid() {
 #ifdef _WIN32
   UUID uuid;
   UuidCreate(&uuid);
-  UuidToStringA(&uuid, uuidStr);
+  UuidToStringA(&uuid, (uint8_t**)&uuidStr);
 #else
   uuid_t binuuid;
   uuid_generate_random(binuuid);

@@ -75,7 +75,7 @@ void cpp_smaz_compress(std::vector<char>& in, std::vector<uint8_t>& out) {
 
     if (best_match_len) {
         // Write index for matched pattern
-        out.push_back((u_char)best_match_index);
+        out.push_back((uint8_t)best_match_index);
         in_idx += best_match_len; // advance by length
     } else {
       // No matches found, switching to literal
@@ -112,7 +112,7 @@ void cpp_smaz_compress(std::vector<char>& in, std::vector<uint8_t>& out) {
         size_t pos = 0;
         while (literal_len > 0) {
           // Clamp to 255
-          u_char chunk = (literal_len > 255 ? 255 : literal_len);
+          uint8_t chunk = (literal_len > 255 ? 255 : literal_len);
           out.push_back(255);
           out.push_back(chunk);
           for(;chunk;chunk--) {
@@ -156,7 +156,7 @@ int smaz_compress(char* in, int inlen, char* out, int outlen) {
     }
     if (best_match_len) {
         // Write index for matched pattern
-        out[out_idx++] = (u_char)best_match_index;
+        out[out_idx++] = (uint8_t)best_match_index;
         in_idx += best_match_len; // advance by length
     } else {
       // No matches found, switching to literal
@@ -192,7 +192,7 @@ int smaz_compress(char* in, int inlen, char* out, int outlen) {
         size_t pos = 0;
         while (literal_len > 0) {
           // Clamp to 255
-          u_char chunk = (literal_len > 255 ? 255 : literal_len);
+          uint8_t chunk = (literal_len > 255 ? 255 : literal_len);
           out[out_idx++] = 255;
           out[out_idx++] = chunk;
           memcpy(out+out_idx, in+literal_start+pos, chunk);
@@ -209,19 +209,19 @@ int smaz_compress(char* in, int inlen, char* out, int outlen) {
 
 void cpp_smaz_decompress(std::vector<uint8_t>& in, std::vector<char>& out) {
   // skipping 1st byte
-  u_char consumed = 1;
+  uint8_t consumed = 1;
 
   // Offset of -3:
   // 1 for skipping 1st byte
   // 1 for .size returning count instead of sectors used
   // 1 for some reason since its off by one otherwise... who knows why but it works
-  u_char inlen = in.size()-3;
+  uint8_t inlen = in.size()-3;
 
   while(inlen) {
     //clamp so it doesnt go below 0 or above input size
 //    inlen=inlen>0?inlen<=in.size()?inlen:in.size():0;
     int len =0;
-    switch ((u_char)in[consumed])
+    switch ((uint8_t)in[consumed])
     {
     case 255:
       consumed++;

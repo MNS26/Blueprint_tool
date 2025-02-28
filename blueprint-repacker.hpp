@@ -22,14 +22,16 @@ private:
   };
   StructureGraphSaveDataProto sgsdp;
 
+  bool CustomTag = false;
   bool CustomSteamToken = false;
+  uint8_t UuidMarker= 0x08;
 
   uint8_t TitleMarker = 0x31;
   uint8_t DescriptionMarker = 0x12;
   uint8_t TagMarker = 0x1A;
   uint8_t CreatorMarker = 0x22; // marker in test form (\")
   uint8_t SteamTokenMarker = 0x2A; // marker in test form (or)
-  std::vector<std::string> Tags = {
+  std::vector<const char*> Tags = {
     "", //Untagged
     "Airplane",
     "Airship",
@@ -72,51 +74,42 @@ private:
     0x00, 0x06, 0x03, 0x00, 0x00, 0x00, 0x0C, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 
     0x20, 0x20, 0x20, 
   };
-  uint32_t VehicleSize = 0;
-  uint32_t UuidSize = 0;
-  uint32_t SmazSize = 0;
-  uint8_t *VehicleSizePtr = NULL;
-  uint8_t *UuidSizePtr = NULL;
-  uint8_t *SmazSizePtr = NULL;
+  // idk why they have this... but its there
+  std::string steamtokenText = "2\nsteamtoken";
+
   std::array<uint8_t, 2> data3 = {
     0x0B, 0x00, 
   };
   std::string Vehicle;
-  std::vector<uint8_t> Uuid;
   std::string Title;
   std::string Description;
+  std::string UuidStr;
   std::string Tag;
   std::string Creator;
   std::string SteamToken;
   std::string VehicleText;
-  uint8_t UuidMarker= 0x08;
   
+  std::vector<uint8_t> Header;
   std::vector<uint8_t> protobuf;
   std::vector<uint8_t> lz4Data;
-
+  std::vector<uint8_t> Uuid;
+  std::vector<uint8_t> smaz;
   std::vector<uint8_t> binary;
-  std::vector<char> smaz;
-  uint8_t *buffptr= NULL;
-  uint32_t filledBytes = 0;
 
-  int ImgWidth = 0;
-  int ImgHeight = 0;
-  int ImgChannels = 4;
 
   std::size_t WriteUleb128(std::vector<char>& dest, unsigned long val);
 
-  bool CreateFakeHeader();
-  bool CompressToProto();
+  void CreateFakeHeader();
+  void CompressToProto();
   void CompressToLz4();
-  compressResult_t compress_internal(LZ4F_compressionContext_t ctx,int chunk);
-  void GenerateUuid();
+  void CreateUuid();
   void GenerateSmaz();
-  void GenerateImage();
-  
+  void GenerateUuid();
+  void GenerateBinary();
+
 public:
 
-
-  void setImageData(std::string filepath);
+  void UseCustomTags();
   void setVehicleData(std::string data);
   void setVehicleTitle(std::string title);
   void setVehicleDescription(std::string description);
@@ -124,15 +117,17 @@ public:
   void setVehicleCreator(std::string creator);
   void setVehicleUuid(std::string uuid);
   void setVehicleSteamToken(std::string token);
-  bool GenerateBlueprint();
+  void GenerateBlueprint();
   void _TEST() {
+    blueprint_repacker::setVehicleData("{}");
+    blueprint_repacker::setVehicleUuid("9bbb86ac-75a9-47c9-848b-618cc2f7a598");
     blueprint_repacker::setVehicleTitle("TEST");
     blueprint_repacker::setVehicleDescription("test");
     blueprint_repacker::setVehicleCreator("Noah");
+    blueprint_repacker::setVehicleTag("DeezNuts");
     blueprint_repacker::setVehicleSteamToken("76561198202006434");
-
-    blueprint_repacker::GenerateSmaz();
-    };
+    blueprint_repacker::GenerateBlueprint();
+  };
 
   blueprint_repacker(/* args */bool enableCustomSteamToken = false);
   ~blueprint_repacker();

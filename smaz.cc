@@ -48,6 +48,87 @@ static const char *Smaz_rcb[254] = {
 };
 // 0-9 A-Z jqk 
 // are not in the decoder
+// \n st ea m to k en
+void cpp_smaz_compress(std::vector<char>& in, std::vector<uint8_t>& out) {
+  size_t in_idx = 1;
+  auto inlen = in.size();
+
+  while (in_idx <inlen) {
+    bool match_found = false;
+    size_t best_match_index =0; // Holds what index has largest match
+    size_t best_match_len = 0; // Holds what the longest match is so far
+
+    // Try matching Smaz_rcb entries
+    for (int i=0; i<254; i++) {
+      const char* pattern = Smaz_rcb[i];
+      size_t pat_len = strlen(pattern);
+
+      // Check if pattern matches
+      if (in_idx+pat_len <= inlen && strncmp(&in[in_idx], pattern, pat_len)==0) {
+        // Match found
+        if (pat_len > best_match_len) {
+          best_match_len = pat_len;
+          best_match_index = i;
+        }
+      }
+    }
+
+    if (best_match_len) {
+        // Write index for matched pattern
+        out.push_back((u_char)best_match_index);
+        in_idx += best_match_len; // advance by length
+    } else {
+      // No matches found, switching to literal
+      size_t literal_start = in_idx;
+      ssize_t literal_len = 0;
+
+      // Continue until we reach the end or find a match
+      while (in_idx < inlen) {
+        bool can_match = false;
+
+        for (int j=0; j<254; j++) {
+          const char* pattern = Smaz_rcb[j];
+          size_t pat_len = strlen(pattern);
+          if (in_idx+pat_len <= inlen && strncmp(&in[in_idx], pattern, pat_len)==0) {
+            can_match = true;
+            break;
+          }
+        }
+        if (can_match)
+          break;
+        // Otherwise add current character to literal
+        literal_len++;
+        in_idx++;
+      }
+
+      //Flush the literal, and segment over 255
+      if (literal_len == 1) {
+        // Single byte copy
+        out.push_back(254);
+        out.push_back(in[literal_start]);
+      } else {
+        // Multi byte copy
+        // Split up when more than 255
+        size_t pos = 0;
+        while (literal_len > 0) {
+          // Clamp to 255
+          u_char chunk = (literal_len > 255 ? 255 : literal_len);
+          out.push_back(255);
+          out.push_back(chunk);
+          for(;chunk;chunk--) {
+            out.push_back(in[literal_start+pos]);
+            pos++;
+            literal_len--;
+          }
+//          memcpy(out+out_idx, in+literal_start+pos, chunk);
+//          out_idx+= chunk;
+//          pos += chunk;
+//          literal_len -= chunk;
+        }
+      }
+    }
+  }
+}
 
 int smaz_compress(char* in, int inlen, char* out, int outlen) {
   size_t in_idx = 0;
@@ -125,6 +206,51 @@ int smaz_compress(char* in, int inlen, char* out, int outlen) {
   return out_idx;
 }
 
+
+void cpp_smaz_decompress(std::vector<uint8_t>& in, std::vector<char>& out) {
+  // skipping 1st byte
+  u_char consumed = 1;
+
+  // Offset of -3:
+  // 1 for skipping 1st byte
+  // 1 for .size returning count instead of sectors used
+  // 1 for some reason since its off by one otherwise... who knows why but it works
+  u_char inlen = in.size()-3;
+
+  while(inlen) {
+    //clamp so it doesnt go below 0 or above input size
+//    inlen=inlen>0?inlen<=in.size()?inlen:in.size():0;
+    int len =0;
+    switch ((u_char)in[consumed])
+    {
+    case 255:
+      consumed++;
+      /* Verbatim string */
+      len = in[consumed++];
+//      inlen -= 2;
+      for (;len;len--) {
+        out.push_back(in[consumed++]);
+        inlen--;
+      } 
+      break;
+    case 254:
+      consumed++;
+      /* Verbatim byte */
+      out.push_back(in[consumed++]);
+      inlen -= 2;
+      break;
+    
+    default:
+      const char *s = Smaz_rcb[in[consumed++]];
+      len = strlen(s);
+      for (int i = 0;len;len--&&i++) {
+        out.push_back(s[i]);
+        inlen--;
+      }
+      break;
+    }
+  }
+}
 
 int smaz_decompress(char *in, int inlen, char *out, int outlen) {
   unsigned char *c = (unsigned char*) in;

@@ -51,6 +51,7 @@ blueprint_repacker::~blueprint_repacker() {
 	smaz.clear();
 	Vehicle.clear();
 	Uuid.clear();
+  UuidStr.clear();
 	Title.clear();
 	Description.clear();
   Tag.clear();
@@ -58,12 +59,8 @@ blueprint_repacker::~blueprint_repacker() {
   SteamToken.clear();
 }
 
-
-
 std::size_t blueprint_repacker::WriteUleb128(std::vector<char>& dest, unsigned long val) {
   std::size_t count = 0;
-  std::vector<char> leb;
-  //leb.resize(8);
   do {
     unsigned char byte = val & 0x7f;
     val >>= 7;
@@ -78,38 +75,31 @@ std::size_t blueprint_repacker::WriteUleb128(std::vector<char>& dest, unsigned l
 }
 
 // filling up the initial header with a replica of a real file
-bool blueprint_repacker::CreateFakeHeader() { 
-	binary.resize(249);
-	buffptr = binary.data();
+void blueprint_repacker::CreateFakeHeader() { 
+  for (int i=0; i<data1.size();i++)
+    Header.push_back(data1[i]);
 
-	buffptr = (uint8_t*)memcpy(binary.data(),data1.begin(),data1.max_size());
-	filledBytes = buffptr - binary.data();
+  for (int i=0; i<sizeof(SaveGameVersion);i++)
+    Header.push_back((uint8_t)(SaveGameVersion>>8*i)&0xff);
 
-	buffptr = (uint8_t*)memset(buffptr,SaveGameVersion,sizeof(SaveGameVersion));
-	filledBytes = buffptr - binary.data();
+  for (int i=0; i<data2.size();i++)
+    Header.push_back(data2[i]);
+  
+  for (int i=0; i<sizeof(uint32_t);i++)
+    Header.push_back((uint8_t)((uint32_t)Vehicle.size()>>8*i)&0xff);
+  
+  for (int i=0; i<sizeof(uint32_t);i++)
+    Header.push_back((uint8_t)((uint32_t)Uuid.size()>>8*i)&0xff);
+  
+  for (int i=0; i<sizeof(uint32_t);i++)
+    Header.push_back((uint8_t)((uint32_t)smaz.size()>>8*i)&0xff);
 
-	buffptr = (uint8_t*)memcpy(binary.data(),data2.begin(),data2.max_size());
-	filledBytes = buffptr - binary.data();
+  for (int i=0; i<data3.size();i++)
+    Header.push_back(data3[i]);
 
-	VehicleSizePtr = buffptr;
-	buffptr = (uint8_t*)memset(buffptr,VehicleSize,sizeof(VehicleSize));
-	filledBytes = buffptr - binary.data();
-
-	UuidSizePtr = buffptr;
-	buffptr = (uint8_t*)memset(buffptr,UuidSize,sizeof(UuidSize));
-	filledBytes = buffptr - binary.data();
-
-	SmazSizePtr = buffptr;
-	buffptr = (uint8_t*)memset(buffptr,SmazSize,sizeof(SmazSize));
-	filledBytes = buffptr - binary.data();
-
-	buffptr = (uint8_t*)memcpy(binary.data(),data3.begin(),data3.max_size());
-	filledBytes = buffptr - binary.data();
-	
-	return true;
 }
 
-bool blueprint_repacker::CompressToProto() { 
+void blueprint_repacker::CompressToProto() { 
 	std::string message;
 	google::protobuf::util::JsonParseOptions options;
 	options.ignore_unknown_fields = true; 
@@ -117,7 +107,7 @@ bool blueprint_repacker::CompressToProto() {
 	size_t size = sgsdp.ByteSizeLong();
 	protobuf.resize(size);
 	bool result = sgsdp.SerializePartialToArray(&protobuf,protobuf.capacity());
-	return (result == true && status.ok()) ? true : false;
+	//return (result == true && status.ok()) ? true : false;
 }
 
 void blueprint_repacker::CompressToLz4() { 
@@ -190,95 +180,40 @@ void blueprint_repacker::CompressToLz4() {
 
 	/* resize with known output size */
 	lz4Data.resize(result.size_out);
-
-	/* set size of lz4 data */
-	memset(VehicleSizePtr,(uint32_t)result.size_out,sizeof(VehicleSize));
 }
 
-blueprint_repacker::compressResult_t blueprint_repacker::compress_internal(LZ4F_compressionContext_t ctx,int chunk) {
-    compressResult_t result = { 1, 0, 0 };  /* result for an error */
-    long long count_in = 0, count_out, bytesToOffset = -1;
-
-    /* write frame header */
-    {   size_t const headerSize = LZ4F_compressBegin(ctx, lz4Data.data(), lz4Data.capacity(), &kPrefs);
-        if (LZ4F_isError(headerSize)) {
-            printf("Failed to start compression: error %u \n", (unsigned)headerSize);
-            return result;
-        }
-        count_out = headerSize;
-        printf("Buffer size is %u bytes, header size %u bytes \n",
-                (unsigned)lz4Data.capacity(), (unsigned)headerSize);
-        //fwrite(outBuff, 1, headerSize, f_out);
-    }
-		// since we walk along it we cant really use them directly
-		auto lz4Ptr = lz4Data.data();
-		auto protoPtr = protobuf.data();
-    /* stream file */
-    for (;;) {
-      size_t compressedSize;
-
-      size_t const readSize = protobuf.size()-count_in;
-      if (readSize == 0) break; /* nothing left to read from input file */
-      count_in += readSize;
-      compressedSize = LZ4F_compressUpdate(ctx,
-	                                          lz4Ptr, lz4Data.size(),
-                                            protoPtr, protobuf.size(),
-                                            NULL);
-
-
-      if (LZ4F_isError(compressedSize)) {
-        printf("Compression failed: error %u \n", (unsigned)compressedSize);
-        return result;
-      }
-
-      printf("Writing %u bytes\n", (unsigned)compressedSize);
-      //safe_fwrite(outBuff, 1, compressedSize, f_out);
-      count_out += compressedSize;
-    }
-
-    /* flush whatever remains within internal buffers */
-    {   size_t const compressedSize = LZ4F_compressEnd(ctx,
-                                                lz4Ptr, lz4Data.size(),
-                                                NULL);
-        if (LZ4F_isError(compressedSize)) {
-            printf("Failed to end compression: error %u \n", (unsigned)compressedSize);
-            return result;
-        }
-
-        printf("Writing %u bytes \n", (unsigned)compressedSize);
-        //safe_fwrite(outBuff, 1, compressedSize, f_out);
-        count_out += compressedSize;
-    }
-
-    result.size_in = count_in;
-    result.size_out = count_out;
-    result.error = 0;
-    return result;
+void blueprint_repacker::CreateUuid() {
+  char* uuidStr = (char*)malloc(37); // gotta store it somewhere for a moment
+#ifdef _WIN32
+  UUID uuid;
+  UuidCreate(&uuid);
+  UuidToStringA(&uuid, uuidStr);
+#else
+  uuid_t binuuid;
+  uuid_generate_random(binuuid);
+  uuid_unparse(binuuid,uuidStr);
+#endif
+  // skipping the null termination
+  // Trailmakers also does this in their image
+  for (int i = 0; i<36;i++)
+    UuidStr.push_back(uuidStr[i]);
+  free(uuidStr);
 }
 
 void blueprint_repacker::GenerateUuid() {
-  Uuid.reserve(40);
-  Uuid[0]= UuidMarker;
-  Uuid[1] = 0x02; // marker for using Uuid
-  Uuid[2] = 0x12; // IDK... just doing the same as pulled from the game generated file
-  Uuid[3] = 0x24; // Uuid length is 36
-#ifdef _WIN32
-  UUID uuid;
-  unsigned char *uuidString = NULL;
-  UuidCreate(&uuid);
-  UuidToStringA(&uuid, &uuidString);
-  memcpy(Uuid.data()+4,&uuidString,Uuid[3]);
-#else
-  uuid_generate(Uuid.data()+4);
-#endif
-  memset(UuidSizePtr,(uint32_t)Uuid.capacity(),sizeof(uint32_t));
+  Uuid.push_back(UuidMarker);// UUID marker
+  Uuid.push_back(0x02);      // Marker to use reall UUID's
+  Uuid.push_back(0x12);      // IDK... Trailmakers also has 0x12 here so im just doing the same
+  Uuid.push_back(0x24);      // UUID length of 36 (skipping null end byte)
+    for (int i = 0; i<36;i++)
+    Uuid.push_back(UuidStr[i]);
 }
-
 void blueprint_repacker::GenerateSmaz() {
   uint8_t smazBuffOffset = 0;
   std::vector<char> GiantAssString;
   int GiantAssStringOffset = 0;
 
+  GiantAssString.push_back(TitleMarker);
   GiantAssStringOffset += WriteUleb128(GiantAssString, Title.length());
   for(int i=0; i<Title.length();i++)
     GiantAssString.push_back(Title[i]);
@@ -303,28 +238,35 @@ void blueprint_repacker::GenerateSmaz() {
   for(int i=0; i<SteamToken.length();i++)
     GiantAssString.push_back(SteamToken[i]);
 
-  GiantAssString.shrink_to_fit();
-  std::vector<char> test;
-  test.resize(GiantAssString.capacity()+10);
-  smaz.resize(4096);
-  smaz[0] = 0x31;
+  for (int i = 0;i<steamtokenText.length();i++)
+    GiantAssString.push_back(steamtokenText[i]);
 
-//  _smaz_compress(GiantAssString.data(),GiantAssString.capacity(),smaz.data()+1,smaz.capacity()-1);
-//  smaz_decompress(smaz.data()+1,smaz.capacity()-1,test.data(),test.capacity());
-//  test.clear();
-  smazBuffOffset += smaz_compress(GiantAssString.data(),GiantAssString.capacity(),smaz.data()+1,smaz.capacity()-1);
-  smaz_decompress(smaz.data()+1,smaz.capacity()-1,test.data(),test.capacity());
-  smaz.shrink_to_fit();
-  fprintf(stdout,"Test: ",smaz.data());
-  for (size_t i = 0; i < smaz.capacity(), i++;)
-    fprintf(stdout," \\x%02x", (unsigned char)smaz[i]);
-  fprintf(stdout,"\n");
-  
+  smaz.push_back(0x31);
+  cpp_smaz_compress(GiantAssString,smaz);
+
+
 }
 
-void blueprint_repacker::setImageData(std::string filepath) {
-  	auto imgData = stbi_load(filepath.c_str(), &ImgWidth, &ImgHeight, &ImgChannels, 4);
+void blueprint_repacker::GenerateBinary() {
+  for (int i=0; i<Header.size(); i++)
+    binary.push_back(lz4Data[i]);
 
+  for (int i=0; i<Header.size(); i++)
+    binary.push_back(lz4Data[i]);
+
+  for (int i=0; i<Uuid.size(); i++)
+    binary.push_back(Uuid[i]);
+
+  for (int i=0; i<smaz.size(); i++)
+    binary.push_back(smaz[i]);
+}
+
+void blueprint_repacker::UseCustomTags() {
+  CustomTag = true;
+}
+
+void blueprint_repacker::setVehicleData(std::string data) {
+  Vehicle.assign(data);
 }
 
 void blueprint_repacker::setVehicleTitle(std::string title) {
@@ -336,27 +278,48 @@ void blueprint_repacker::setVehicleDescription(std::string description) {
 }
 
 void blueprint_repacker::setVehicleTag(std::string tag) {
-  Tag.assign(tag);
+  bool UsingValidTag = false;
+  for (int i = 0; i<Tag.size();i++){
+    if (strncmp(tag.data(),Tags[i],strlen(Tags[i]))==0){
+      UsingValidTag = true;
+    }
+  }
+  if (CustomTag)
+    Tag.assign(tag); // USE AT OWN RISK
+  else if (UsingValidTag)
+    Tag.assign(tag); // we have a valid tag
+  else 
+    Tag.assign(Tags[0]); // default is ""
 }
-
 void blueprint_repacker::setVehicleCreator(std::string creator) {
   Creator.assign(creator);
 }
 
 void blueprint_repacker::setVehicleUuid(std::string uuid) {
-//  Uuid.assign(uuid);
+  UuidStr.assign(uuid);
 }
 
 void blueprint_repacker::setVehicleSteamToken(std::string token) {
-  SteamToken.assign(token);
+  CustomSteamToken ? SteamToken.assign(token) : SteamToken.assign("00000000000000000") ;
 }
 
-bool blueprint_repacker::GenerateBlueprint() { 
+void blueprint_repacker::GenerateBlueprint() { 
 	
-	CreateFakeHeader();	
+  // make UUID if we dont get one
+  if (UuidStr.empty())
+  	CreateUuid();
+
+  // Converting Json to Protbuf
 	CompressToProto();
+
+  // Generating the parts for the binary  
 	CompressToLz4();
 	GenerateUuid();
-	GenerateSmaz();
-	return false;
+  GenerateSmaz();
+
+  // Header relies on Vehicle, UUID, SMAZ sizes 
+  CreateFakeHeader();	
+
+  // Assembling the binary
+  GenerateBinary();
 }

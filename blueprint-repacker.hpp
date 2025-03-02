@@ -80,6 +80,14 @@ private:
   std::array<uint8_t, 2> data3 = {
     0x0B, 0x00, 
   };
+
+  std::vector<uint8_t> Header;
+  std::vector<uint8_t> protobuf;
+  std::vector<uint8_t> lz4Data;
+  std::vector<uint8_t> Uuid;
+  std::vector<uint8_t> smaz;
+  std::vector<uint8_t> binary;
+
   std::string Vehicle;
   std::string Title;
   std::string Description;
@@ -89,12 +97,6 @@ private:
   std::string SteamToken;
   std::string VehicleText;
   
-  std::vector<uint8_t> Header;
-  std::vector<uint8_t> protobuf;
-  std::vector<uint8_t> lz4Data;
-  std::vector<uint8_t> Uuid;
-  std::vector<uint8_t> smaz;
-  std::vector<uint8_t> binary;
 
 
   std::size_t WriteUleb128(std::vector<char>& dest, unsigned long val);
@@ -110,6 +112,7 @@ private:
 public:
 
   void UseCustomTags();
+  void UseCustomToken();
   void setVehicleData(std::string data);
   void setVehicleTitle(std::string title);
   void setVehicleDescription(std::string description);
@@ -117,16 +120,17 @@ public:
   void setVehicleCreator(std::string creator);
   void setVehicleUuid(std::string uuid);
   void setVehicleSteamToken(std::string token);
-  void GenerateBlueprint();
+  void GenerateBlueprintData();
+  inline std::vector<uint8_t> getBlueprintData() const {return binary;};
   void _TEST() {
-    blueprint_repacker::setVehicleData("{}");
+    blueprint_repacker::setVehicleData("{{ 'StructureNodes': [  {   'SocketPosition': {},   'SocketRotation': {    'EulerY': 1   },   'parentSocket': -1,   'BlockSetup': {    'primaryColor': {     'm_commonColorIndexOffByOne': 17    },    'secondaryColor': {     'm_commonColorIndexOffByOne': 2    },    'SkinType': 200   },   'BlockMetadataGuid': {    'low': '4663452642151314132',    'high': '11595786232070705820'   },   'CloneNodeID': -1  } ], 'Bounds': {  'center': {   'x': 1.375,   'y': -0.5,   'z': 1.125  },  'size': {   'x': 3,   'y': 1.25,   'z': 2.5  } }, 'LowestPoint': -1.125, 'MidPointOffsetFromWeldGroupSpace': {  'x': 1.375,  'y': -0.5,  'z': 1.125 }, 'SaveDataVersion': 13, 'GameVersion': {  'GameVersion_Major': 1,  'GameVersion_Mid': 6,  'GameVersion_Minor': 2,  'GameVersion_ChangeSet': 46142 }, 'WeldingData': {  'm_weldgroupsDict': [   {    'Value': [     0    ]   }  ],  'WeldSettingsHash': 7143424 }}}");
     blueprint_repacker::setVehicleUuid("9bbb86ac-75a9-47c9-848b-618cc2f7a598");
     blueprint_repacker::setVehicleTitle("TEST");
     blueprint_repacker::setVehicleDescription("test");
     blueprint_repacker::setVehicleCreator("Noah");
     blueprint_repacker::setVehicleTag("DeezNuts");
     blueprint_repacker::setVehicleSteamToken("76561198202006434");
-    blueprint_repacker::GenerateBlueprint();
+    blueprint_repacker::GenerateBlueprintData();
   };
 
   blueprint_repacker(/* args */bool enableCustomSteamToken = false);

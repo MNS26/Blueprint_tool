@@ -48,7 +48,7 @@ static const char *Smaz_rcb[254] = {
 };
 // 0-9 A-Z jqk 
 // are not in the decoder
-// \n st ea m to k en
+
 void cpp_smaz_compress(std::vector<char>& in, std::vector<uint8_t>& out) {
   size_t in_idx = 1;
   auto inlen = in.size();

@@ -1,5 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
 #include <stdlib.h>
 #include <stdbool.h>
@@ -14,8 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "stb/stb_image_write.h"
-#include "stb/stb_image.h"
+
 #include "smaz.h"
 #include "trailmakers.pb.h"
 #include "blueprint-repacker.hpp"
@@ -106,7 +103,7 @@ void blueprint_repacker::CompressToProto() {
 	auto status = google::protobuf::util::JsonStringToMessage(Vehicle, &sgsdp,options);
 	size_t size = sgsdp.ByteSizeLong();
 	protobuf.resize(size);
-	bool result = sgsdp.SerializePartialToArray(&protobuf,protobuf.capacity());
+	bool result = sgsdp.SerializePartialToArray(protobuf.data(),protobuf.capacity());
 	//return (result == true && status.ok()) ? true : false;
 }
 
@@ -117,7 +114,13 @@ void blueprint_repacker::CompressToLz4() {
 
 	size_t const ctxCreation = LZ4F_createCompressionContext(&ctx, LZ4F_VERSION);
 	size_t const outputBufCap	= LZ4F_compressBound(16*1024,&kPrefs);
-	lz4Data.reserve(outputBufCap);
+  lz4Data.clear();
+  lz4Data.resize(0);
+  lz4Data.shrink_to_fit();
+	lz4Data.resize(outputBufCap);
+  
+
+
   if (!LZ4F_isError(ctxCreation)) {
     //result = blueprint_repacker::compress_internal(ctx, 16*1024);
 
@@ -143,8 +146,8 @@ void blueprint_repacker::CompressToLz4() {
       if (readSize == 0) break; /* nothing left to read from input file */
       count_in += readSize;
       compressedSize = LZ4F_compressUpdate(ctx,
-	                                          lz4Ptr, lz4Data.size(),
-                                            protoPtr, protobuf.size(),
+	                                          lz4Data.data(), lz4Data.size(),
+                                            protobuf.data(), protobuf.size(),
                                             NULL);
 
       if (LZ4F_isError(compressedSize)) {
@@ -179,7 +182,7 @@ void blueprint_repacker::CompressToLz4() {
 	LZ4F_freeCompressionContext(ctx);   /* supports free on NULL */
 
 	/* resize with known output size */
-	lz4Data.resize(result.size_out);
+	lz4Data.shrink_to_fit();
 }
 
 void blueprint_repacker::CreateUuid() {
@@ -265,6 +268,10 @@ void blueprint_repacker::UseCustomTags() {
   CustomTag = true;
 }
 
+void blueprint_repacker::UseCustomToken() {
+  CustomSteamToken = true;
+}
+
 void blueprint_repacker::setVehicleData(std::string data) {
   Vehicle.assign(data);
 }
@@ -303,7 +310,7 @@ void blueprint_repacker::setVehicleSteamToken(std::string token) {
   CustomSteamToken ? SteamToken.assign(token) : SteamToken.assign("00000000000000000") ;
 }
 
-void blueprint_repacker::GenerateBlueprint() { 
+void blueprint_repacker::GenerateBlueprintData() { 
 	
   // make UUID if we dont get one
   if (UuidStr.empty())

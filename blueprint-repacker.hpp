@@ -12,14 +12,21 @@ private:
     unsigned long long size_in;
     unsigned long long size_out;
   } compressResult_t;
+
   LZ4F_preferences_t kPrefs = {
-    { LZ4F_max256KB, LZ4F_blockLinked, LZ4F_noContentChecksum, LZ4F_frame,
-      0 /* unknown content size */, 0 /* no dictID */ , LZ4F_noBlockChecksum },
+    LZ4F_default,
+    LZ4F_blockLinked,
+    LZ4F_contentChecksumEnabled,
+    LZ4F_frame,
+    0 /* unknown content size */,
+    0 /* no dictID */ ,
+    LZ4F_noBlockChecksum ,
     0,   /* compression level; 0 == default */
     0,   /* autoflush */
     0,   /* favor decompression speed */
     { 0, 0, 0 },  /* reserved, must be set to 0 */
   };
+
   StructureGraphSaveDataProto sgsdp;
 
   bool CustomTag = false;
@@ -122,11 +129,12 @@ public:
   void setVehicleSteamToken(std::string token);
   void GenerateBlueprintData();
   inline std::vector<uint8_t> getBlueprintData() const {return binary;};
+  inline uint32_t getHeaderSize() const {return Header.size()-1;}
   void _TEST() {
     blueprint_repacker::setVehicleData("{{ 'StructureNodes': [  {   'SocketPosition': {},   'SocketRotation': {    'EulerY': 1   },   'parentSocket': -1,   'BlockSetup': {    'primaryColor': {     'm_commonColorIndexOffByOne': 17    },    'secondaryColor': {     'm_commonColorIndexOffByOne': 2    },    'SkinType': 200   },   'BlockMetadataGuid': {    'low': '4663452642151314132',    'high': '11595786232070705820'   },   'CloneNodeID': -1  } ], 'Bounds': {  'center': {   'x': 1.375,   'y': -0.5,   'z': 1.125  },  'size': {   'x': 3,   'y': 1.25,   'z': 2.5  } }, 'LowestPoint': -1.125, 'MidPointOffsetFromWeldGroupSpace': {  'x': 1.375,  'y': -0.5,  'z': 1.125 }, 'SaveDataVersion': 13, 'GameVersion': {  'GameVersion_Major': 1,  'GameVersion_Mid': 6,  'GameVersion_Minor': 2,  'GameVersion_ChangeSet': 46142 }, 'WeldingData': {  'm_weldgroupsDict': [   {    'Value': [     0    ]   }  ],  'WeldSettingsHash': 7143424 }}}");
     blueprint_repacker::setVehicleUuid("9bbb86ac-75a9-47c9-848b-618cc2f7a598");
     blueprint_repacker::setVehicleTitle("TEST");
-    blueprint_repacker::setVehicleDescription("test");
+    blueprint_repacker::setVehicleDescription("test ﷽");
     blueprint_repacker::setVehicleCreator("Noah");
     blueprint_repacker::setVehicleTag("DeezNuts");
     blueprint_repacker::setVehicleSteamToken("76561198202006434");

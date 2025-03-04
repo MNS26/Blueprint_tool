@@ -24,7 +24,7 @@ blueprint_unpacker::blueprint_unpacker(/* args */bool enableSteamToken) // even 
 
 blueprint_unpacker::~blueprint_unpacker() {
 	binaryData.clear();
-	VehicleData.clear();
+	Lz4Data.clear();
 	protobufData.clear();
 	uuidData.clear();
 	smazData.clear();
@@ -56,11 +56,14 @@ int64_t blueprint_unpacker::decompress_data_internal(uint8_t* srcBuffer,size_t s
 		 * Continue while there is more input to read (srcPtr != srcEnd)
 		 * and the frame isn't over (ret != 0)
 		 */
+    LZ4F_decompressOptions_t decomp = {0};
+    decomp.skipChecksums=0;
+  
 		while (srcPtr < srcEnd && ret != 0) {
 		  // Any data within dst has been flushed at this stage
 			size_t dstSize = dstBufferSize;
 			size_t srcSize = (const char*)srcEnd - (const char*) srcPtr;
-			ret = LZ4F_decompress(dctx, dstBuffer, &dstSize, srcPtr,&srcSize,NULL);
+			ret = LZ4F_decompress(dctx, dstBuffer, &dstSize, srcPtr,&srcSize,&decomp);
 			if (LZ4F_isError(ret)) {
 				printf("Decompression error: %s\n", LZ4F_getErrorName(ret));
 				return -EXIT_FAILURE;
@@ -123,12 +126,11 @@ int blueprint_unpacker::decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize,
 }
 
 bool blueprint_unpacker::decompress_protobuf() {
-  sgsdp.ParsePartialFromArray(protobufData.data(),protobufData.capacity());
+  sgsdp.ParseFromArray(protobufData.data(),protobufData.capacity());
 	// Configure options for human-readable JSON
 	google::protobuf::util::JsonPrintOptions options;
 	options.add_whitespace = true; // Enable pretty printing
 	//options.always_print_primitive_fields = true; // Optionally include unset fields
-	options.preserve_proto_field_names = true; // Use Protobuf field names (instead of camelCase)
 
 	auto status = google::protobuf::util::MessageToJsonString(sgsdp,&Vehicle, options);
 	return status.ok();
@@ -177,31 +179,20 @@ void blueprint_unpacker::decompress_smaz() {
   Description.resize(LEB128);
   Description.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
-
   offset = get_index_of(tempString.data(), tempString.size(), TagMarker, offset+Description.size());
   auto a = (tempString.data()+offset+1);
   Tag.resize(*a);
   Tag.assign((char*)(tempString.data()+offset+1),*a);
-//  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
-//  Tag.resize(LEB128);
-//  Tag.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
   offset = get_index_of(tempString.data(), tempString.size(), CreatorMarker, offset+Tag.size());
   a = (tempString.data()+offset+1);
   Creator.resize(*a);
   Creator.assign((char*)(tempString.data()+offset+2),*a);
-//  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
-//  Creator.resize(LEB128);
-//  Creator.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
 
   offset = get_index_of(tempString.data(), tempString.size(), SteamTokenMarker, offset+Creator.size());
   a = (tempString.data()+offset+1);
   SteamToken.resize(*a);
   SteamToken.assign((char*)(tempString.data()+offset+2),*a);
-//  LEB128 = getSmazLEB(tempString.data()+1, consumedBytes, offset);
-//  SteamToken.resize(LEB128);
-//  SteamToken.assign((char*)(tempString.data()+offset+consumedBytes+1),LEB128);
-
 
   tempString.clear();
 }
@@ -220,13 +211,13 @@ void blueprint_unpacker::extractUUID() {
   case 0x02: // blueprint with proper UUID
     uuid_len = uuidData[3];
     UUID.resize(uuid_len);
-    memcpy(UUID.data(), uuidData.data()+3,uuid_len);
+    memcpy(UUID.data(), uuidData.data()+4,uuid_len);
     break;
   case 0x05: // legacy blueprint updated with UUID placeholder
     legacy_with_uuid = true;
     uuid_len = uuidData[3];
     UUID.resize(uuid_len);
-    memcpy(UUID.data(), uuidData.data()+3,uuid_len);
+    memcpy(UUID.data(), uuidData.data()+4,uuid_len);
     break;
   case 0x06: // No real UUID but has smaz and protobuf instead of lz4
     uuid_len = uuidData[3];
@@ -242,12 +233,10 @@ void blueprint_unpacker::extractUUID() {
   }
 }
 
-void blueprint_unpacker::extractVehicle() {
-  VehicleData = std::vector<uint8_t>(binaryData.begin() + offset_header, binaryData.begin() + offset_header + VehicleLength);
-}
+
 void blueprint_unpacker::parse() {
     // those are only possible if we get the raw bin file or the entire PNG
-    if (has_header) {
+  if (has_header) {
       offset_header += binaryData[offset_header]+1;         // SaveGamePNG size + own byte (17+1)
       SaveGameVersion = (uint32_t)binaryData[offset_header];// get PNG Save version (>4 means we have lz4 )
       offset_header += sizeof(SaveGameVersion);         // Move forward 4 bytes (Version num)
@@ -277,8 +266,7 @@ void blueprint_unpacker::parse() {
         offset_header += sizeof(VehicleLength); // shift over by 4
         offset_header += 3; // shift over by 3 (this lines up with protobuf @0xc0)
       }
-      if(VehicleLength)
-        extractVehicle();
+
       if(UUIDLength)
         extractUUID();
       if(smazLength){
@@ -286,35 +274,54 @@ void blueprint_unpacker::parse() {
         decompress_smaz();
       }
     }
-    if (!memcmp(VehicleData.data(),Lz4MagicHeader.data(),Lz4MagicHeader.capacity())) {
-      hasLz4MagicHeader = true;
-      protobufData.resize(MAX_LZ4_DECOMPRESSED_SIZE);
-      protobufData.resize(decompress_lz4(VehicleData.data(), VehicleData.size(), protobufData.data(), protobufData.size()));
-    }else {
-      fprintf(stdout, "This Blueprint has no LZ4 magic header\n");
-      fprintf(stdout, "Asumming it has Protobuf instead\n");
-      protobufData = std::vector<uint8_t>(VehicleData);
+    if (toLz4) {
+      Lz4Data = std::vector<uint8_t>(binaryData.begin() + offset_header, binaryData.begin() + offset_header + VehicleLength);
     }
-    decompress_protobuf();
-    if(legacy_with_uuid) {
-      fprintf(stdout, "Updated legacy Blueprint Detected.\n");
-      fprintf(stdout, "This file has no real UUID\n");
-    }
-}
 
-bool blueprint_unpacker::extractFromImage(std::string filepath) {
-	auto imgData = stbi_load(filepath.c_str(), &ImgWidth, &ImgHeight, &ImgChannels, 4);
-  if (!imgData) {
+    if (toProtobuf){
+      if (memcmp(Lz4Data.data(),Lz4MagicHeader.data(),Lz4MagicHeader.capacity())==0) {
+        hasLz4MagicHeader = true;
+        protobufData.resize(MAX_LZ4_DECOMPRESSED_SIZE);
+        protobufData.resize(decompress_lz4(Lz4Data.data(), Lz4Data.size(), protobufData.data(), protobufData.size()));
+      }else {
+        fprintf(stderr, "This Blueprint has no LZ4 magic header\n");
+        fprintf(stderr, "Asumming it has Protobuf instead\n");
+        protobufData = std::vector<uint8_t>(Lz4Data);
+      }
+      decompress_protobuf();
+    }
+    if(legacy_with_uuid) {
+      fprintf(stderr, "Updated legacy Blueprint Detected.\n");
+      fprintf(stderr, "This file has no real UUID\n");
+    }
+  }
+
+bool blueprint_unpacker::extractFromImageData(std::string filepath) {
+	auto img = stbi_load(filepath.c_str(), &ImgWidth, &ImgHeight, &ImgChannels, 4);
+  if (!img) {
     fprintf(stderr, "Failed to load image: %s\n", filepath.c_str());
     return false;
   }
   printf("Loaded image: %s (Width: %d, Height: %d, Channels: %d)\n", filepath.c_str(), ImgWidth, ImgHeight, ImgChannels);
 
-  // Call the extraction function
-  // This fills the buffer and return the size of the extracted data (yes... we can use it to trim the buffer... "shut up")
-  extractFromImage(imgData, ImgWidth, ImgHeight);
+  size_t offset = 0; // Track how much data has been written
+	binaryData.resize(ImgWidth * ImgHeight * 3);
+	uint8_t *output_data = binaryData.data();
+
+	// Extract binary data
+	for (int y = ImgHeight - 1; y >= 0; y--) { // Start from the bottom row and work upwards
+		for (int x = 0; x < ImgWidth; x++) { // Start from the left
+			int index = (y * ImgWidth + x) * 4; // RGBA has 4 bytes per pixel
+			unsigned char alpha = img[index + 3];
+			if (alpha == 0) { // Alpha channel fully transparent
+				memcpy(&output_data[offset], &img[index], 3); // Copy RGB only
+				offset += 3;
+			}
+		}
+	}
+  
   has_header = true;
-  stbi_image_free(imgData);
+  stbi_image_free(img);
   return true;
 }
 
@@ -326,36 +333,16 @@ bool blueprint_unpacker::extractFromBinary(std::string filepath) {
 }
 
 bool blueprint_unpacker::extractFromlz4(std::string filepath) {
-  VehicleData = readFile(filepath);
+  Lz4Data = readFile(filepath);
   HasLz4 = true;
   HasProtobuf = true;
-  return !VehicleData.empty();
+  return !Lz4Data.empty();
 }
 
 bool blueprint_unpacker::extractFromProtobuf(std::string filepath) {
   protobufData = readFile(filepath);
   HasProtobuf = true;
   return !protobufData.empty();
-}
-
-// Function to extract binary data from image data
-void blueprint_unpacker::extractFromImage(const unsigned char *image_data, int width, int height) {
-	size_t offset = 0; // Track how much data has been written
-
-	binaryData.resize(width * height * 3);
-	uint8_t *output_data = binaryData.data();
-
-	// Extract binary data
-	for (int y = height - 1; y >= 0; y--) { // Start from the bottom row and work upwards
-		for (int x = 0; x < width; x++) { // Start from the left
-			int index = (y * width + x) * 4; // RGBA has 4 bytes per pixel
-			unsigned char alpha = image_data[index + 3];
-			if (alpha == 0) { // Alpha channel fully transparent
-				memcpy(&output_data[offset], &image_data[index], 3); // Copy RGB only
-				offset += 3;
-			}
-		}
-	}
 }
 
 long blueprint_unpacker::fsize(FILE *fp){

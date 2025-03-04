@@ -140,9 +140,9 @@ void print_help() {
     fprintf(stderr, "║ -p <path>          path to png input file                                           ║\n");
     fprintf(stderr, "║ -j <path>          path to Json file                                                ║\n");
     fprintf(stderr, "║ -f <path>          path to Text file for Title, Description, Tag, Creator, UUID ... ║\n");
-    fprintf(stderr, "║ -t <Title>         Title of the creation (single line)                   [optional] ║\n");
+    fprintf(stderr, "║ -T <Title>         Title of the creation (single line)                   [optional] ║\n");
     fprintf(stderr, "║ -d <Description>   Description of the creation (single line)             [optional] ║\n");
-    fprintf(stderr, "║ -T <Tag>                                                                 [optional] ║\n");
+    fprintf(stderr, "║ -t <Tag>                                                                 [optional] ║\n");
     fprintf(stderr, "║ -c <Creator>                                                             [optional] ║\n");
     fprintf(stderr, "║ -u <UUID>                                                                [optional] ║\n");
 //    fprintf(stderr, "║ -s <SteamToken>                                                                     ║\n");
@@ -157,6 +157,22 @@ void print_help() {
 }
 
 bool readFromTextFile(std::string path, blueprint_repacker& repacker) {}
+
+
+void writeFile(std::string path, std::vector<uint8_t> contents) {
+  FILE *fp = fopen(path.c_str(), "wb");
+  if (!fp) {
+    fprintf(stderr, "Failed to open output file: %s\n", path.c_str());
+    return;
+  }
+  int res = fwrite(contents.data(), 1, contents.size(), fp);
+//  printf("res %d\n", res);
+  if (res != contents.size()) {
+    fprintf(stderr, "cant write entire file\n");
+  }
+  fclose(fp);
+}
+
 
 int main(int argc, char *argv[]) {
 #ifdef _WIN32
@@ -176,7 +192,7 @@ int main(int argc, char *argv[]) {
   bool useEmbeddedMode = false;
 //  repacker._TEST();
   
-  while ((opt = getopt(argc, argv, "p:j:f:t:d:CT:c:u:Ss:o:ehH")) != -1) {
+  while ((opt = getopt(argc, argv, "p:j:f:T:d:Ct:c:u:Ss:o:ehH")) != -1) {
     switch (opt) {
     case 'p':
       inPathPng = optarg;
@@ -191,7 +207,7 @@ int main(int argc, char *argv[]) {
       inPathText = optarg;
       useTextFile = true;
       break;
-    case 't':
+    case 'T':
       repacker.setVehicleTitle(optarg);
       break;
     case 'd':
@@ -200,7 +216,7 @@ int main(int argc, char *argv[]) {
     case 'C':
       repacker.UseCustomTags();
       break;
-    case 'T':
+    case 't':
       repacker.setVehicleTag(optarg);
       break;
     case 'c':
@@ -247,46 +263,79 @@ int main(int argc, char *argv[]) {
   int channels = 0;
   auto image =  stbi_load(inPathPng.c_str(),&width,&height,&channels,0);
 
-  // Now calculate how many rows to add and round it up
-  auto extraRows = ceil(repacker.getBlueprintData().size()/width);
+//  int newWidth = 512;
+//  int newHeight = 512;
+  int newWidth = width;
+  int newHeight = height;
+  size_t newSize = newWidth*newHeight*4;
+  std::vector<uint8_t> newImage;
 
-  int newHeight = height+extraRows;
-  // png may not have alpha, so we will add it
-  size_t newImageSize = width*newHeight*4;
-  std::vector<uint8_t> newImgData;
-  // Copy the original image into the new buffer (top part)
-  for (int i = 0; i <(width*height*channels);(channels==3) ? i+=3:i+=4) {
-    newImgData.push_back(image[i]);
-    newImgData.push_back(image[i+1]);
-    newImgData.push_back(image[i+2]);
-    if (channels==3)
-      newImgData.push_back(0xFF);
-    else
-      newImgData.push_back(image[i+3]);
+  newImage.resize(newSize);
+
+  // Fill the canvas with a background color.
+  // Here, we fill it with a transparent background (0,0,0,0).
+  for (int i = 0; i < newWidth * newHeight; i++) {
+    newImage[i * 4 + 0] = 0; // Red
+    newImage[i * 4 + 1] = 0; // Green
+    newImage[i * 4 + 2] = 0; // Blue
+    newImage[i * 4 + 3] = 0; // Alpha (transparent)
   }
-  newImgData.resize(newImageSize);
 
-  auto data = repacker.getBlueprintData();
-  auto custom_data = data.data();
-  auto custom_data_len = repacker.getBlueprintData().size();
-  // Fill the bottom area (the extra rows) with a background color (RGB = 0) and
-  // embed the custom data into the alpha channel in the order: bottom-to-top, left-to-right.
-  int data_index = 0;
-  for (int y = newHeight - 1; y >= height; y--) { // start from the bottom row and move upward
-    for (int x = 0; x < width; x++) { // left to right in each row
-      int pixel_index = (y * width + x) * channels;
-      // Set the RGB channels to a default value (here, 0; adjust if needed)
-      if (data_index < custom_data_len) {
-        newImgData[pixel_index + 0] = custom_data[data_index++]; // Red
-        newImgData[pixel_index + 1] = custom_data[data_index++]; // Green
-        newImgData[pixel_index + 2] = custom_data[data_index++]; // Blue
-        newImgData[pixel_index + 3] = 0; // Alpha
-      }
+  // Compute offsets to center the small image on the canvas.
+  int offset_x = (newWidth - width) / 2;
+  int offset_y = (newHeight - height) / 2;
+
+
+  // Copy the small image into the canvas at the computed offsets.
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      int canvas_x = offset_x + x;
+      int canvas_y = offset_y + y;
+      // Check bounds just in case.
+      if (canvas_x < 0 || canvas_x >= newWidth || canvas_y < 0 || canvas_y >= newHeight)
+        continue;
+            
+      int canvas_index = (canvas_y * newWidth + canvas_x) * 4;
+      int img_index = (y * width + x) * channels;
+            
+      newImage[canvas_index++] = image[img_index++];
+      newImage[canvas_index++] = image[img_index++];
+      newImage[canvas_index++] = image[img_index++];
+      newImage[canvas_index++] = channels==3 ? 0xff : image[img_index++];
     }
   }
 
-  stbi_write_png(out_path.c_str(), width, newHeight, 4, newImgData.data(), width*4);
+  auto data = repacker.getBlueprintData();
+  auto custom_data = data.data();
+  auto custom_data_len = repacker.getBlueprintData().capacity();
+  // Now calculate how many rows to add and round it up
+  auto usedRows = std::max(ceil(newWidth/custom_data_len),ceil(custom_data_len/newWidth));
+
+  // Fill the bottom area (the extra rows) with a background color (RGB = 0) and
+  // embed the custom data into the alpha channel in the order: bottom-to-top, left-to-right.
+  int data_index = 0;
+  for (int y = newHeight-1; y >= newHeight-usedRows; y--) { // start from the bottom row and move upward
+    for (int x = 0; x < newWidth; x++) { // left to right in each row
+      int pixel_index = (y * newWidth + x) * 4;
+      // Set the RGB channels to a default value (here, 0; adjust if needed)
+      if (data_index < custom_data_len) {
+        newImage[pixel_index + 0] = custom_data[data_index++]; // Red
+        newImage[pixel_index + 1] = custom_data[data_index++]; // Green
+        newImage[pixel_index + 2] = custom_data[data_index++]; // Blue
+        newImage[pixel_index + 3] = 0x00; // Alpha
+      }
+    }
+  }
+  for (uint8_t i = 0; i < sizeof(uint32_t); i++) {
+    uint8_t a = (uint8_t)(repacker.getHeaderSize() >> (8*i));
+    auto b = ((newWidth*4)-1)-i;
+    newImage[b] = a;
+  }
+//  newImage[(newWidth*4)-1] = 0xFF;
+//  newImage[(newWidth*4)-2] = 0x00;
+//  newImage[(newWidth*4)-3] = 0x00;
+//  newImage[(newWidth*4)-4] = 0x00;
+  stbi_write_png(out_path.c_str(), newWidth, newHeight, 4, newImage.data(), newWidth*4);
   return 0;
 }
-
 

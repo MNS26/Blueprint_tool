@@ -119,7 +119,7 @@ void print_banner() {
 }
 void print_help() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
-    fprintf(stdout, "║ This tool takes a \"blueprint\" and converts it to the following types:             ║\n");
+    fprintf(stdout, "║ This tool takes a \"blueprint\" and converts it to the following types:               ║\n");
     fprintf(stdout, "║ Raw binary                         (direct rip from the image)                      ║\n");
     fprintf(stdout, "║ lz4 commpressed + user data        (compressed vehicle data and user data)          ║\n");
     fprintf(stdout, "║ protobuffer + user data            (raw vehicle structure data and user data)       ║\n");
@@ -130,15 +130,14 @@ void print_help() {
     fprintf(stdout, "║ -p <path>                          path to png input file                           ║\n");
     fprintf(stdout, "║ -i <path>                          path to input file                               ║\n");
     fprintf(stdout, "║ -I [png, binary, lz4. protobuf]    input file type                                  ║\n");
-    fprintf(stdout, "║ -o <path>                          path to outpout file                             ║\n");
-    fprintf(stdout, "║ -O [binary, lz4, protobuf, json]   Output file type                                 ║\n");
-    fprintf(stdout, "║ -j <path>                          path to outpout Json file                        ║\n");
-    fprintf(stdout, "║ -b <path>                          path to outpout Binary file                      ║\n");
-    fprintf(stdout, "║ -l <path lz4>                      path to output lz4 file                          ║\n");
-    fprintf(stdout, "║ -P <path protobuf>                 path to output protobuf file                     ║\n");
-    fprintf(stdout, "║ -j <path json>                     path to output json file                         ║\n");
+    fprintf(stdout, "║ -o <path>                          path and name to outpout file                    ║\n");
+//    fprintf(stdout, "║ -O [binary, lz4, protobuf, json]   Output file type                                 ║\n");
+    fprintf(stdout, "║ -j <path>                          Enable json output                               ║\n");
+    fprintf(stdout, "║ -b <path>                          Enable binary output                             ║\n");
+    fprintf(stdout, "║ -l <path lz4>                      Enable lz4 output                                ║\n");
+    fprintf(stdout, "║ -P <path protobuf>                 Enable protobuf output                           ║\n");
     fprintf(stdout, "║ -U                                 dump UUID to text file                           ║\n");
-    fprintf(stdout, "║ -D                                 dump Description to text file                    ║\n");
+    fprintf(stdout, "║ -D                                 dump User Data to text file                      ║\n");
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
 
@@ -160,34 +159,30 @@ int main(int argc, char *argv[]) {
   bool dump_Description = false;
   bool print_info = false;
 
-  while ((opt = getopt(argc, argv, "p:b:l:j:P:o:O:i:UDTfI:ThH")) != -1) {
+  while ((opt = getopt(argc, argv, "p:bljPo:O:i:UDTfI:hH")) != -1) {
     switch (opt) {
     case 'p':
       in_path = optarg;
       in_type = "png";
       break;
     case 'b':
-      out_path = optarg;
-      out_type = "binary";
+      unpacker.EnableBinaryOut();
       break;
     case 'l':
-      out_path = optarg;
-      out_type = "lz4";
+      unpacker.EnableLz4Out();
       break;
     case 'j':
-      out_path = optarg;
-      out_type = "json";
+      unpacker.EnableJsonOut();
       break;
     case 'P':
-      out_path = optarg;
-      out_type = "protobuf";
+      unpacker.EnableProtobufOut();
       break;
     case 'o':
       out_path = optarg;
       break;
-    case 'O':
-      out_type = optarg;
-      break;
+//    case 'O':
+//      out_type = optarg;
+//      break;
     case 'i':
       in_path = optarg;
       break;
@@ -228,7 +223,7 @@ int main(int argc, char *argv[]) {
     std::vector<uint8_t> protobuf_data;
 
     if (in_type == "png") {
-      unpacker.extractFromImage(in_path);
+      unpacker.extractFromImageData(in_path);
     }
     if (in_type == "binary") {
       unpacker.extractFromBinary(in_path);;
@@ -242,45 +237,37 @@ int main(int argc, char *argv[]) {
 
     unpacker.parse();
 
-    if (unpacker.isLegacyBlueprint()) {
-      fprintf(stdout,"Legacy Blueprint detected!\n");
-      fprintf(stdout,"This file has no description or UUID\n");
-      fprintf(stdout,"Available outputs are: Binary, Protobuf, Json\n");
-      if (out_type == "lz4") {
-        fprintf(stdout,"Unable to output: %s. Using default: Json.\n", out_type.c_str());
-        out_type = "json";
-        auto last_point = out_path.find_last_of(".");
-        out_path.replace(last_point+1,last_point+5,out_type); // replacing extention with out_type
+//    if (unpacker.isLegacyBlueprint()) {
+//      fprintf(stdout,"Legacy Blueprint detected!\n");
+//      fprintf(stdout,"This file has no description or UUID\n");
+//      fprintf(stdout,"Available outputs are: Binary, Protobuf, Json\n");
+//      if (out_type == "lz4") {
+//        fprintf(stdout,"Unable to output: %s. Using default: Json.\n", out_type.c_str());
+//        out_type = "json";
+//        auto last_point = out_path.find_last_of(".");
+//        out_path.replace(last_point+1,last_point+5,out_type); // replacing extention with out_type
+//      }
+//    }
+
+    if (unpacker.getBinaryOut()) {
+      writeFile(out_path+".bin", unpacker.getBinary());
+    }
+    if (!unpacker.isLegacyBlueprint())
+    {
+      if (unpacker.getLz4Out()) {
+        writeFile(out_path+".lz4", unpacker.getLz4());
       }
-    }
-    
-    if (out_type == "lz4") {
-      writeFile(out_path, unpacker.getLz4());
+    } else {fprintf(stderr, "Legacy file detected! No LZ4 in this file.\n");}
+
+    if (unpacker.getProtobufOut()) {
+      writeFile(out_path+".protobuf", unpacker.getProtobuf());
     }
 
-    if (out_type == "binary") {
-      writeFile(out_path, unpacker.getBinary());
+    if (unpacker.getJsonOut()) {
+      writeFile(out_path+".json", unpacker.getVehicle());
     }
 
-    if (out_type == "protobuf") {
-      writeFile(out_path, unpacker.getProtobuf());
-    }
-
-    if (out_type == "json") {
-      writeFile(out_path, unpacker.getVehicle());
-    }
-
-    if (dump_UUID) {
-      auto old_out_path = out_path;
-      auto last_point = out_path.find_last_of(".");
-      out_path.replace(last_point,last_point+out_path.length()," uuid.txt"); // changing file name on the fly
-      writeFile(out_path,uuid);
-      out_path = old_out_path;
-    }
     if (dump_Description) {
-      auto old_out_path = out_path;
-      auto last_point = out_path.find_last_of(".");
-      out_path.replace(last_point,last_point+out_path.length()," description.txt"); // changing file name on the fly
       std::string temp("Title:\n");
       temp.append(unpacker.getTitle());
       temp.append("\n\rDescription:\n");
@@ -297,8 +284,7 @@ int main(int argc, char *argv[]) {
       temp.append(unpacker.getSteamToken());
       temp.append("\n");
       
-      writeFile(out_path,temp);
-      out_path = old_out_path;
+      writeFile(out_path+" User Data.txt",temp);
     }
     if (out_type == "info") {
 

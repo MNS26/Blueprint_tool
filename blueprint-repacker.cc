@@ -83,7 +83,7 @@ void blueprint_repacker::CreateFakeHeader() {
     Header.push_back(data2[i]);
   
   for (int i=0; i<sizeof(uint32_t);i++)
-    Header.push_back((uint8_t)((uint32_t)Vehicle.size()>>8*i)&0xff);
+    Header.push_back((uint8_t)((uint32_t)lz4Data.size()>>8*i)&0xff);
   
   for (int i=0; i<sizeof(uint32_t);i++)
     Header.push_back((uint8_t)((uint32_t)Uuid.size()>>8*i)&0xff);
@@ -96,27 +96,29 @@ void blueprint_repacker::CreateFakeHeader() {
 
 }
 
+  extern void writeFile(std::string, std::vector<uint8_t>);
 void blueprint_repacker::CompressToProto() { 
 	std::string message;
 	google::protobuf::util::JsonParseOptions options;
+  
 	options.ignore_unknown_fields = true; 
 	auto status = google::protobuf::util::JsonStringToMessage(Vehicle, &sgsdp,options);
 	size_t size = sgsdp.ByteSizeLong();
 	protobuf.resize(size);
-	bool result = sgsdp.SerializePartialToArray(protobuf.data(),protobuf.capacity());
+	bool result = sgsdp.SerializeToArray(protobuf.data(),protobuf.capacity());
+	//writeFile("dump.proto",protobuf);
 	//return (result == true && status.ok()) ? true : false;
 }
 
 void blueprint_repacker::CompressToLz4() { 
 	LZ4F_compressionContext_t ctx;
   compressResult_t result = { 1, 0, 0 };  /* result for an error */
+  LZ4F_compressOptions_t opt = {0,0,0,0};
+  opt.stableSrc = true;
   long long count_in = 0, count_out, bytesToOffset = -1;
 
 	size_t const ctxCreation = LZ4F_createCompressionContext(&ctx, LZ4F_VERSION);
-	size_t const outputBufCap	= LZ4F_compressBound(16*1024,&kPrefs);
-  lz4Data.clear();
-  lz4Data.resize(0);
-  lz4Data.shrink_to_fit();
+	size_t const outputBufCap	= LZ4F_compressBound(protobuf.size(),&kPrefs);
 	lz4Data.resize(outputBufCap);
   
 
@@ -135,7 +137,7 @@ void blueprint_repacker::CompressToLz4() {
 		       (unsigned)lz4Data.capacity(), (unsigned)headerSize);
 
 		// since we walk along it we cant use them directly
-		auto lz4Ptr = lz4Data.data();
+		auto lz4Ptr = lz4Data.data()+headerSize;
 		auto protoPtr = protobuf.data();
 
 		/* stream buffer */
@@ -145,8 +147,11 @@ void blueprint_repacker::CompressToLz4() {
       size_t const readSize = protobuf.size()-count_in;
       if (readSize == 0) break; /* nothing left to read from input file */
       count_in += readSize;
+//       compressedSize = LZ4F_compressFrame(lz4Ptr, lz4Data.size()-headerSize,
+//                                            protobuf.data(), protobuf.size(),
+//                                            NULL);
       compressedSize = LZ4F_compressUpdate(ctx,
-	                                          lz4Data.data(), lz4Data.size(),
+	                                          lz4Ptr, lz4Data.size()-headerSize,
                                             protobuf.data(), protobuf.size(),
                                             NULL);
 
@@ -167,11 +172,11 @@ void blueprint_repacker::CompressToLz4() {
     if (LZ4F_isError(compressedSize)) {
       printf("Failed to end compression: error %u \n", (unsigned)compressedSize);
       return;
-    
-    	printf("Writing %u bytes \n", (unsigned)compressedSize);
-      //safe_fwrite(outBuff, 1, compressedSize, f_out);
-      count_out += compressedSize;
     }
+    printf("Writing %u bytes \n", (unsigned)compressedSize);
+    //safe_fwrite(outBuff, 1, compressedSize, f_out);
+    count_out += compressedSize;
+    
 
     result.size_in = count_in;
     result.size_out = count_out;
@@ -181,8 +186,8 @@ void blueprint_repacker::CompressToLz4() {
 	}
 	LZ4F_freeCompressionContext(ctx);   /* supports free on NULL */
 
-	/* resize with known output size */
-	lz4Data.shrink_to_fit();
+
+	lz4Data.resize(result.size_out);
 }
 
 void blueprint_repacker::CreateUuid() {
@@ -252,9 +257,9 @@ void blueprint_repacker::GenerateSmaz() {
 
 void blueprint_repacker::GenerateBinary() {
   for (int i=0; i<Header.size(); i++)
-    binary.push_back(lz4Data[i]);
+    binary.push_back(Header[i]);
 
-  for (int i=0; i<Header.size(); i++)
+  for (int i=0; i<lz4Data.size(); i++)
     binary.push_back(lz4Data[i]);
 
   for (int i=0; i<Uuid.size(); i++)

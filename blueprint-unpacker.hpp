@@ -21,7 +21,7 @@ private:
 
   std::vector<uint8_t> Lz4MagicHeader = {0x04, 0x22, 0x4D, 0x18};
   std::vector<uint8_t> binaryData;
-  std::vector<uint8_t> VehicleData;
+  std::vector<uint8_t> Lz4Data;
   std::vector<uint8_t> protobufData;
   std::vector<uint8_t> uuidData;
   std::vector<uint8_t> smazData;
@@ -47,21 +47,22 @@ private:
   int ImgChannels = 0;
   StructureGraphSaveDataProto sgsdp;
 
+  bool toBinary = false;
+  bool toLz4 = false;
+  bool toProtobuf = false;
+  bool toJson = false;
+
   int64_t decompress_data_internal(uint8_t* srcBuffer,size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize,size_t filled, size_t alreadyConsumed, LZ4F_dctx* dctx);
 
   long fsize(FILE *fp);
   std::vector<uint8_t> readFile(std::string path);
-  void extractFromImage(const unsigned char *image_data, int width, int height);
 
-  void extractVehicle();
   int decompress_lz4(uint8_t* srcBuffer, size_t srcBufferSize, uint8_t* dstBuffer, size_t dstBufferSize);
   bool decompress_protobuf();
   int get_index_of(uint8_t* t, size_t cap, int val, uint32_t offset);
-  int get_index_of(char* t, size_t cap, int val, uint32_t offset);
   void extractUUID();
   void extractSmaz();
   size_t getSmazLEB(uint8_t* buffptr, uint8_t &consumed, uint16_t offset, uint8_t maxFromOffset);
-  size_t getSmazLEB(char* buffptr, uint8_t &consumed, uint16_t offset, uint8_t maxFromOffset);
   void decompress_smaz();
 
 public:
@@ -70,7 +71,7 @@ public:
   inline bool getExportSteamTokenEnabled() const {return enableSteamToken;};
   inline bool isLegacyBlueprint() const {return leagacy_file;}
   inline std::vector<uint8_t> getBinary() const {return binaryData;}
-  inline std::vector<uint8_t> getLz4() const {return VehicleData;}
+  inline std::vector<uint8_t> getLz4() const {return Lz4Data;}
   inline std::vector<uint8_t> getProtobuf() const {return protobufData;}
   inline std::vector<uint8_t> getSmaz() const {return smazData;}
   inline std::string getVehicle() {return Vehicle;}
@@ -81,11 +82,20 @@ public:
   inline std::string getUuid() {return UUID;}
   inline std::string getSteamToken() const {return enableSteamToken ? SteamToken : "-----------------";} // yes... it will be in the code but not in the help window
   
-  bool extractFromImage(std::string filepath);
+  bool extractFromImageData(std::string filepath);
   bool extractFromBinary(std::string filepath);
   bool extractFromlz4(std::string filepath);
   bool extractFromProtobuf(std::string filepath);
 
+  inline void EnableBinaryOut()   {toBinary=true;}
+  inline void EnableLz4Out()      {toBinary=toLz4=true;}
+  inline void EnableProtobufOut() {toBinary=toLz4=toProtobuf=true;}
+  inline void EnableJsonOut()     {toBinary=toLz4=toProtobuf=toJson=true;}
+
+  inline bool getBinaryOut() const {return toBinary;}
+  inline bool getLz4Out() const {return toLz4;}
+  inline bool getProtobufOut() const {return toProtobuf;}
+  inline bool getJsonOut() const {return toJson;}
 
   blueprint_unpacker(/* args */bool enableSteamToken = false);
   ~blueprint_unpacker();

@@ -1,4 +1,3 @@
-
 #ifdef _WIN32
 #  define _WIN32_WINNT 0x0A00
     #define WIN32_LEAN_AND_MEAN
@@ -17,8 +16,8 @@
     #include <winver.h>
 #  define _WIN32_WINNT 0x0A00
     #endif
-    #include <stdio.h>
-    #include <stdint.h>
+//    #include <stdio.h>
+//    #include <stdint.h>
     #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
         #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
     #endif
@@ -30,8 +29,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <stdint.h>
-
 
 #include <cstdint>
 #include <ctime>
@@ -107,7 +104,7 @@ void change_charset_utf8() {
 void print_banner() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stdout, "║╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━╮╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stdout, "║╱╱┃╭━╮┃┃ ┃╱V1.3╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ┃╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stdout, "║╱╱┃╭━╮┃┃ ┃╱V1.4╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ┃╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱║\n");
     fprintf(stdout, "║╱╱┃╰━╯╰┫ ┃╭━╮ ╭━┳━━━┳━━━┳━━━┳━┳━━━━┻╮ ╭╯╱╱╱┃ ┃╱╱┃ ┣━━━━━┳━━━┳━━━━━┳━━━┫ ┃ ╭┳━━━┳━━╮╱╱║\n");
     fprintf(stdout, "║╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃ ━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┃ ┃╱╱╱╱┃ ┃╱╱┃ ┃ ╭━╮ ┃╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┃ ━━┫ ╭╯╱╱║\n");
     fprintf(stdout, "║╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃ ━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ╰━━╯ ┃ ┃ ┃ ┃╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┃ ━━┫ ┃╱╱╱║\n");
@@ -117,6 +114,7 @@ void print_banner() {
     fprintf(stdout, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 
 }
+
 void print_help() {
     fprintf(stdout, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stdout, "║ This tool takes a \"blueprint\" and converts it to the following types:               ║\n");
@@ -130,7 +128,7 @@ void print_help() {
     fprintf(stdout, "║ -p <path>                          path to png input file                           ║\n");
     fprintf(stdout, "║ -i <path>                          path to input file                               ║\n");
     fprintf(stdout, "║ -I [png, binary, lz4. protobuf]    input file type                                  ║\n");
-    fprintf(stdout, "║ -o <path>                          path and name to outpout file                    ║\n");
+    fprintf(stdout, "║ -o <path>                          path and name to output file                    ║\n");
 //    fprintf(stdout, "║ -O [binary, lz4, protobuf, json]   Output file type                                 ║\n");
     fprintf(stdout, "║ -j <path>                          Enable json output                               ║\n");
     fprintf(stdout, "║ -b <path>                          Enable binary output                             ║\n");

@@ -15,14 +15,12 @@
     #include <wincon.h>
     #include <winver.h>
     #endif
-
-    #include <stdio.h>
-    #include <stdint.h>
+//    #include <stdio.h>
+//    #include <stdint.h>
     #ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
         #define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
     #endif
 #endif
-
 
 #define MAX_LZ4_DECOMPRESSED_SIZXE (1024 * 1024 * 4)
 #include <stdint.h>
@@ -116,15 +114,14 @@ std::string readFileStr(std::string path) {
 void print_banner() {
     fprintf(stderr, "╔═════════════════════════════════════════════════════════════════════════════════════╗\n");
     fprintf(stderr, "║╱╱╱╭━━━╮╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╭━━━━━━╮╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╮╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱┃╭━╮┃┃ ┃╱V0.0╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ╭━━╮ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱┃╭━╮┃┃ ┃╱V1.0╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭╯ ╰╮╱╱╱┃ ╭━━╮ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╰━╯╰┫ ┃╭━╮ ╭━┳━━━┳━━━┳━━━┳━┳━━━━┻╮ ╭╯╱╱╱┃ ╰━━╯ ┣━━━┳━━━┳━━━━━┳━━━┫ ┃ ╭┳━━━┳━━╮╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃ ━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┫ ┃╱╱╱╱┃ ╭━╮ ╭┫ ━━┫╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┫ ━━┫ ╭╯╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃ ━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ┃ ╰╮╰┫ ━━┫╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┫ ━━┫ ┃╱╱╱╱║\n");
     fprintf(stderr, "║╱╱╱╰━━━━┻━━┻━━━━━┻━━━┫ ╭━┻━╯ ╰━┻━╯ ╰━┻━━╯╱╱╱╰━╯  ╰━┻━━━┫ ╭━┻━╯ ╰━┻━━━┻━╯ ╰┻━━━┻━╯╱╱╱╱║\n");
     fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃ Made by:  Noah  Clever ╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱ Vali ╱╱╱╱╱╱╱╱╱╱╱║\n");
     fprintf(stderr, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
-
 }
 
 void print_help() {
@@ -139,7 +136,7 @@ void print_help() {
     fprintf(stderr, "║ -h/-H              shows this help screen                                           ║\n");
     fprintf(stderr, "║ -p <path>          path to png input file                                           ║\n");
     fprintf(stderr, "║ -j <path>          path to Json file                                                ║\n");
-    fprintf(stderr, "║ -f <path>          path to Text file for Title, Description, Tag, Creator, UUID ... ║\n");
+//    fprintf(stderr, "║ -f <path>          path to Text file for Title, Description, Tag, Creator, UUID ... ║\n");
     fprintf(stderr, "║ -T <Title>         Title of the creation (single line)                   [optional] ║\n");
     fprintf(stderr, "║ -d <Description>   Description of the creation (single line)             [optional] ║\n");
     fprintf(stderr, "║ -t <Tag>                                                                 [optional] ║\n");
@@ -147,10 +144,10 @@ void print_help() {
     fprintf(stderr, "║ -u <UUID>                                                                [optional] ║\n");
 //    fprintf(stderr, "║ -s <SteamToken>                                                                     ║\n");
     fprintf(stderr, "║ -o <path>          Path to the png output file                                      ║\n");
-    fprintf(stderr, "║ -e                 Enable Embeddded mode.                        [MUST BE 1ST FLAG] ║\n");
-    fprintf(stderr, "║                    This mode outputs the data to stdout.                            ║\n");
-    fprintf(stderr, "║                    This mode is meant for use in other programs.                    ║\n");
-    fprintf(stderr, "║                    -j Now takes a  json string instead of a file                    ║\n");
+//    fprintf(stderr, "║ -e                 Enable Embeddded mode.                        [MUST BE 1ST FLAG] ║\n");
+//    fprintf(stderr, "║                    This mode outputs the data to stdout.                            ║\n");
+//    fprintf(stderr, "║                    This mode is meant for use in other programs.                    ║\n");
+//    fprintf(stderr, "║                    -j Now takes a  json string instead of a file                    ║\n");
 //    fprintf(stderr, "║                    -f Now takes a string instead of a file that hold the data       ║\n");
     fprintf(stderr, "║ -C                 Enable Custom Tags                  [!! USE AT YOUT OWN RISK !!] ║\n");
     fprintf(stderr, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
@@ -331,11 +328,7 @@ int main(int argc, char *argv[]) {
     auto b = ((newWidth*4)-1)-i;
     newImage[b] = a;
   }
-//  newImage[(newWidth*4)-1] = 0xFF;
-//  newImage[(newWidth*4)-2] = 0x00;
-//  newImage[(newWidth*4)-3] = 0x00;
-//  newImage[(newWidth*4)-4] = 0x00;
-  stbi_write_png(out_path.c_str(), newWidth, newHeight, 4, newImage.data(), newWidth*4);
+  stbi_write_png(out_path.append(".png").c_str(), newWidth, newHeight, 4, newImage.data(), newWidth*4);
   return 0;
 }
 

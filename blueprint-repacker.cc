@@ -20,6 +20,7 @@
 extern "C"
 {
 #ifdef _WIN32
+#define EXPORT
 #define _WIN32_WINNT 0x0A00
 #define WIN32_LEAN_AND_MEAN
 #define NOGDI
@@ -32,6 +33,14 @@ extern "C"
 #include <uuid/uuid.h>
 #endif
 }
+
+#if defined __ELF__ 
+  #define API __attribute((visibility("default")))
+#elif defined EXPORT
+  #define API __declspec(dllexport)
+#else 
+  #define API __declspec(dllimport)
+#endif
 
 using namespace google::protobuf;
 using google::protobuf::util::TimeUtil;
@@ -160,7 +169,7 @@ void blueprint_repacker::CompressToLz4() {
         return;
       }
 
-      printf("Writing %u bytes\n", (unsigned)compressedSize);
+//      printf("Writing %u bytes\n", (unsigned)compressedSize);
       //safe_fwrite(outBuff, 1, compressedSize, f_out);
       count_out += compressedSize;
     }
@@ -173,7 +182,7 @@ void blueprint_repacker::CompressToLz4() {
       printf("Failed to end compression: error %u \n", (unsigned)compressedSize);
       return;
     }
-    printf("Writing %u bytes \n", (unsigned)compressedSize);
+//    printf("Writing %u bytes \n", (unsigned)compressedSize);
     //safe_fwrite(outBuff, 1, compressedSize, f_out);
     count_out += compressedSize;
     
@@ -216,6 +225,7 @@ void blueprint_repacker::GenerateUuid() {
     for (int i = 0; i<36;i++)
     Uuid.push_back(UuidStr[i]);
 }
+
 void blueprint_repacker::GenerateSmaz() {
   uint8_t smazBuffOffset = 0;
   std::vector<char> GiantAssString;
@@ -315,7 +325,7 @@ void blueprint_repacker::setVehicleSteamToken(std::string token) {
   CustomSteamToken ? SteamToken.assign(token) : SteamToken.assign("00000000000000000") ;
 }
 
-void blueprint_repacker::GenerateBlueprintData() { 
+void blueprint_repacker::pack() { 
 	
   // make UUID if we dont get one
   if (UuidStr.empty())

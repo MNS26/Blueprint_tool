@@ -119,8 +119,8 @@ void print_banner() {
     fprintf(stderr, "║╱╱╱┃╭━━╮┃ ┃┃ ┃ ┃ ┃ ━━┫╭━╮┃ ╭━╋━┫ ╭━╮ ┫ ┃╱╱╱╱┃ ╭━╮ ╭┫ ━━┫╭━╮┃ ╭━╮ ┃╭━━┫ ╰━╯┫ ━━┫ ╭╯╱╱╱║\n");
     fprintf(stderr, "║╱╱╱┃╰━━╯┃ ╰┫ ╰━╯ ┃ ━━┫╰━╯┃ ┃ ┃ ┃ ┃ ┃ ┃ ╰╮╱╱╱┃ ┃ ╰╮╰┫ ━━┫╰━╯┃ ╭━╮ ┃╰━━┫ ╭━╮┫ ━━┫ ┃╱╱╱╱║\n");
     fprintf(stderr, "║╱╱╱╰━━━━┻━━┻━━━━━┻━━━┫ ╭━┻━╯ ╰━┻━╯ ╰━┻━━╯╱╱╱╰━╯  ╰━┻━━━┫ ╭━┻━╯ ╰━┻━━━┻━╯ ╰┻━━━┻━╯╱╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃ Made by:  Noah  Clever ╱╱╱║\n");
-    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱ Vali ╱╱╱╱╱╱╱╱╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┃ ┃ Made by: Noah  Clever ╱╱╱╱║\n");
+    fprintf(stderr, "║╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━╯╱╱╱╱╱╱╱╱╱ Vali         ╱╱╱╱║\n");
     fprintf(stderr, "╚═════════════════════════════════════════════════════════════════════════════════════╝\n");
 }
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
   if (useTextFile)
     readFromTextFile(inPathJson,repacker);
   
-  repacker.GenerateBlueprintData();
+  repacker.pack();
 
   int width = 0;
   int height = 0;
@@ -306,12 +306,12 @@ int main(int argc, char *argv[]) {
   auto custom_data = data.data();
   auto custom_data_len = repacker.getBlueprintData().capacity();
   // Now calculate how many rows to add and round it up
-  auto usedRows = std::max(ceil(newWidth/custom_data_len),ceil(custom_data_len/newWidth));
+  auto usedRows = std::max(ceil((newWidth*4)/custom_data_len),ceil(custom_data_len/(newWidth*4)));
 
   // Fill the bottom area (the extra rows) with a background color (RGB = 0) and
   // embed the custom data into the alpha channel in the order: bottom-to-top, left-to-right.
   int data_index = 0;
-  for (int y = newHeight-1; y >= newHeight-usedRows; y--) { // start from the bottom row and move upward
+  for (int y = newHeight-1; y >= newHeight-1-usedRows; y--) { // start from the bottom row and move upward
     for (int x = 0; x < newWidth; x++) { // left to right in each row
       int pixel_index = (y * newWidth + x) * 4;
       // Set the RGB channels to a default value (here, 0; adjust if needed)
@@ -323,11 +323,10 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  for (uint8_t i = 0; i < sizeof(uint32_t); i++) {
-    uint8_t a = (uint8_t)(repacker.getHeaderSize() >> (8*i));
-    auto b = ((newWidth*4)-1)-i;
-    newImage[b] = a;
-  }
+  for (uint8_t i=0; i<sizeof(uint32_t); i++)
+    newImage[((newWidth - 1) * 4) + i] = (repacker.getHeaderSize() >> (24 - i * 8)) & 0xFF;
+
+
   stbi_write_png(out_path.append(".png").c_str(), newWidth, newHeight, 4, newImage.data(), newWidth*4);
   return 0;
 }

@@ -18,6 +18,7 @@ using namespace std;
 
 
 /* compression codebook, used for decompression/compression  */
+// Indexes to check: 61, 63, 64, 90
 static const char *Smaz_rcb[254] = {
 /*0  */ " "    ,"the" ,"e"  ,"t"    ,"a"  ,"of"  ,"o"   ,"and"    ,"i"     ,"n"  ,
 /*10 */ "s"    ,"e "  ,"r"  ," th"  ," t" ,"in"  ,"he"  ,"th"     ,"h"     ,"he ",
@@ -25,7 +26,7 @@ static const char *Smaz_rcb[254] = {
 /*30 */ "d "   ,"on"  ," of","re"   ,"of ","t "  ,", "  ,"is"     ,"u"     ,"at" ,
 /*40 */ "   "  ,"n "  ,"or" ,"which","f"  ,"m"   ,"as"  ,"it"     ,"that"  ,"\n" ,
 /*50 */ "was"  ,"en"  ,"  " ," w"   ,"es" ," an" ," i"  ,"\r"     ,"f "    ,"g"  ,
-/*60 */ "p"    ,"nd"  ," s" ,"nd "  ,"ed ","w"   ,"b"   ,"http://","for"   ,"te" ,
+/*60 */ "p"    ,"nd"  ," s" ,"nd "  ,"ed ","w"   ,"ed"   ,"http://","for"   ,"te" ,
 /*70 */ "ing"  ,"y "  ,"The"," c"   ,"ti" ,"r "  ,"his" ,"st"     ," in"   ,"ar" ,
 /*80 */ "nt"   ,","   ," to","y"    ,"ng" ," h"  ,"with","le"     ,"al"    ,"to ",
 /*90 */ "b"    ,"ou"  ,"be" ,"were" ," b" ,"se"  ,"o "  ,"ent"    ,"ha"    ,"ng ",

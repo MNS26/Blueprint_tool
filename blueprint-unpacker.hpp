@@ -1,5 +1,4 @@
 #include "trailmakers.pb.h"
-
 class blueprint_unpacker
 {
 private:
@@ -42,9 +41,9 @@ private:
   uint8_t TitleLength = 0;
   size_t DescriptionLength = 0;
   size_t CreatorLength = 0;
-  int ImgWidth = 0;
-  int ImgHeight = 0;
-  int ImgChannels = 0;
+//  int ImgWidth = 0;
+//  int ImgHeight = 0;
+//  int ImgChannels = 0;
   StructureGraphSaveDataProto sgsdp;
 
   bool toBinary = false;
@@ -66,7 +65,7 @@ private:
   void decompress_smaz();
 
 public:
-  void parse();
+  void unpack();
   inline void exportSteamToken() {enableSteamToken = true;};
   inline bool getExportSteamTokenEnabled() const {return enableSteamToken;};
   inline bool isLegacyBlueprint() const {return leagacy_file;}
@@ -82,10 +81,13 @@ public:
   inline std::string getUuid() {return UUID;}
   inline std::string getSteamToken() const {return enableSteamToken ? SteamToken : "-----------------";} // yes... it will be in the code but not in the help window
   
-  bool extractFromImageData(std::string filepath);
-  bool extractFromBinary(std::string filepath);
-  bool extractFromlz4(std::string filepath);
-  bool extractFromProtobuf(std::string filepath);
+  void setBinary(std::vector<uint8_t> data);
+  void setlz4(std::vector<uint8_t> data);
+  void setProtobuf(std::vector<uint8_t> data);
+//  bool extractFromImageData(std::string filepath);
+//  bool extractFromBinary(std::string filepath);
+//  bool extractFromlz4(std::string filepath);
+//  bool extractFromProtobuf(std::string filepath);
 
   inline void EnableBinaryOut()   {toBinary=true;}
   inline void EnableLz4Out()      {toBinary=toLz4=true;}
@@ -96,7 +98,43 @@ public:
   inline bool getLz4Out() const {return toLz4;}
   inline bool getProtobufOut() const {return toProtobuf;}
   inline bool getJsonOut() const {return toJson;}
+  inline void Clear() {
+    binaryData.clear();
+    binaryData.shrink_to_fit();
 
+    Lz4Data.clear();
+    Lz4Data.shrink_to_fit();
+
+    protobufData.clear();
+    protobufData.shrink_to_fit();
+
+    uuidData.clear();
+    uuidData.shrink_to_fit();
+
+    smazData.clear();
+    smazData.shrink_to_fit();
+
+    Vehicle.clear();
+    Vehicle.shrink_to_fit();
+
+    UUID.clear();
+    UUID.shrink_to_fit();
+
+    Title.clear();
+    Title.shrink_to_fit();
+
+    Description.clear();
+    Description.shrink_to_fit();
+
+    Tag.clear();
+    Tag.shrink_to_fit();
+
+    Creator.clear();
+    Creator.shrink_to_fit();
+
+    SteamToken.clear();
+    SteamToken.shrink_to_fit();
+  }
   blueprint_unpacker(/* args */bool enableSteamToken = false);
   ~blueprint_unpacker();
 };

@@ -39,7 +39,7 @@ private:
   uint8_t CreatorMarker = 0x22; // marker in test form (\")
   uint8_t SteamTokenMarker = 0x2A; // marker in test form (or)
   std::vector<const char*> Tags = {
-    "", //Untagged
+    "",//Untagged
     "Airplane",
     "Airship",
     "Animal",
@@ -116,8 +116,12 @@ private:
   void GenerateUuid();
   void GenerateBinary();
 
+
 public:
 
+
+  std::string GetTag(int index) {return index < Tags.capacity()? Tags[index]: "";}
+  uint8_t GetTagCount() {return Tags.capacity();}
   void UseCustomTags();
   void UseCustomToken();
   void setVehicleData(std::string data);
@@ -127,10 +131,46 @@ public:
   void setVehicleCreator(std::string creator);
   void setVehicleUuid(std::string uuid);
   void setVehicleSteamToken(std::string token);
-  void GenerateBlueprintData();
+  void pack();
   inline std::vector<uint8_t> getBlueprintData() const {return binary;};
-  inline uint32_t getHeaderSize() const {return Header.size()-1;}
+  inline uint32_t getHeaderSize() const {return Header.size();}
+  inline void ClearData() {
+    binary.clear();
+    binary.shrink_to_fit();
 
+  	lz4Data.clear();
+    lz4Data.shrink_to_fit();
+
+    protobuf.clear();
+    protobuf.shrink_to_fit();
+
+    smaz.clear();
+    smaz.shrink_to_fit();
+
+    Vehicle.clear();
+    Vehicle.shrink_to_fit();
+
+    Uuid.clear();
+    Uuid.shrink_to_fit();
+
+    UuidStr.clear();
+    UuidStr.shrink_to_fit();
+
+    Title.clear();
+    Title.shrink_to_fit();
+
+    Description.clear();
+    Description.shrink_to_fit();
+
+    Tag.clear();
+    Tag.shrink_to_fit();
+
+    Creator.clear();
+    Creator.shrink_to_fit();
+    
+    SteamToken.clear();
+    SteamToken.shrink_to_fit();
+  }
 
   blueprint_repacker(/* args */bool enableCustomSteamToken = false);
   ~blueprint_repacker();

@@ -149,7 +149,57 @@ int main() {
       dpp::command_data_option subcommand = cmd_data.options[0];
 
       if (subcommand.name == "info") {
+        dpp::embed embed;
+        blueprint_unpacker unpacker(true);
+        dpp::command_data_option image_file_param = subcommand.options[0];
+        dpp::snowflake file_id;
+        dpp::attachment att = {0};
+        if (!image_file_param.empty()) {
+          file_id = std::get<dpp::snowflake>(event.get_parameter("blueprint"));
+          att = event.command.get_resolved_attachment(file_id);
+          ImageName = att.filename;
+          if(ImageName.find(".", 0) == ImageName.npos) {
+            ImageName.append(".png");
+          }
+          curl_easy_setopt(curl, CURLOPT_URL, att.url.c_str());
+          curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,curl_data_int);
+          curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Image);
+          curl_easy_perform(curl);
+        }
+
+        int Width = 0;
+        int Height = 0;
+        int Comp = 0;
+        unpacker.setBinary(
+          extractBinaryData(
+            stbi_load_from_memory(
+              Image.data(),
+              Image.capacity(),
+              &Width,
+              &Height,
+              &Comp,
+              0),
+            &Width,
+            &Height
+          )
+        );
+        unpacker.unpack();
+        srand(time(0));
+        embed.set_colour(rand() % 0xFFFFFF);
+        embed.set_author(unpacker.getCreator(),"https://steamcommunity.com/profiles/"+unpacker.getSteamToken(),"");
+        embed.set_title(unpacker.getTitle());
+        embed.set_url(att.url);
+        embed.set_thumbnail(att.url);
+        embed.add_field("Description:",unpacker.getDescription());
+        embed.add_field("Tag:",unpacker.getTag()=="" ? "Untagged":unpacker.getTag());
+        embed.add_field("Creator:",unpacker.getCreator());
+        embed.add_field("UUID:",unpacker.getUuid());
+        embed.add_field("Steam Token:",unpacker.getSteamToken());
+
+//        embed.set_title();
+        //embed.set_author(unpacker.getCreator(), "https://steamcommunity.com/profiles/"+unpacker.getSteamToken(), "https://steamcommunity.com/profiles/"+unpacker.getSteamToken());
         // TODO CREATE INFO CODE
+        msg.add_embed(embed);
       } else if (subcommand.name == "unpack") {
         blueprint_unpacker unpacker(true);
         unpacker.EnableJsonOut();
@@ -166,35 +216,36 @@ int main() {
           curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&Image);
           curl_easy_perform(curl);
         }
-        uint8_t* img = nullptr;
+
         int Width = 0;
         int Height = 0;
         int Comp = 0;
-        Binary = extractBinaryData(
-          stbi_load_from_memory(
-            Image.data(),
-            Image.capacity(),
+        unpacker.setBinary(
+          extractBinaryData(
+            stbi_load_from_memory(
+              Image.data(),
+              Image.capacity(),
+              &Width,
+              &Height,
+              &Comp,
+              0),
             &Width,
-            &Height,
-            &Comp,
-            0),
-          &Width,
-          &Height
+            &Height
+          )
         );
-        unpacker.setBinary(Binary);
         unpacker.unpack();
-        
+
         msg.add_file(ImageName.replace(ImageName.length()-3,4,"json"), unpacker.getVehicle());
-        msg.content.append("```\n");
-        msg.content.append("Title:       "+ unpacker.getTitle()+"\n");
-        msg.content.append("Description: "+ unpacker.getDescription()+"\n");
-        msg.content.append("Tag:         "+ unpacker.getTag()+"\n");
-        msg.content.append("Creator:     "+ unpacker.getCreator()+"\n");
-        msg.content.append("UUID:        "+ unpacker.getUuid()+"\n");
-        msg.content.append("```\n");
-        msg.content.append("Steam profile: ");
-        msg.content.append("https://steamcommunity.com/profiles/");
-        msg.content.append(unpacker.getSteamToken());
+        //msg.content.append("```\n");
+        //msg.content.append("Title:       "+ unpacker.getTitle()+"\n");
+        //msg.content.append("Description: "+ unpacker.getDescription()+"\n");
+        //msg.content.append("Tag:         "+ unpacker.getTag()+"\n");
+        //msg.content.append("Creator:     "+ unpacker.getCreator()+"\n");
+        //msg.content.append("UUID:        "+ unpacker.getUuid()+"\n");
+        //msg.content.append("```\n");
+        //msg.content.append("Steam profile: ");
+        //msg.content.append("https://steamcommunity.com/profiles/");
+        //msg.content.append(unpacker.getSteamToken());
         
 
       } else if (subcommand.name == "repack"){

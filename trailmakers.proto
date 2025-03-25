@@ -9,9 +9,9 @@ message InputSeatBlockSetup {
 
 message SliderBlockSetup {
     float sliderValue = 1;
-    float sliderValue2 = 2;
-    float sliderValue3 = 3;
-    float sliderValue4 = 4;
+    float sliderValue1 = 2;
+    float sliderValue2 = 3;
+    float sliderValue3 = 4;
     ToneBlockSetup ToneBlockSetup = 5;
 }
 
